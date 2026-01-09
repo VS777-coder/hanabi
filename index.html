@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hanabi Precision Analyzer</title>
+    <title>Hanabi Analyzer Pro</title>
     <style>
         :root {
             --reel-w: 130px; 
-            --sym-h: calc(100vh / 20); 
+            --sym-h: calc(100vh / 19.5); 
             --red: #ff3333; --blue: #3399ff; --green: #22cc22; --yellow: #ffff00; --purple: #cc33ff;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: sans-serif; height: 100svh; overflow: hidden; display: flex; flex-direction: column; }
 
+        /* 状態ヘッダー（指示通りに固定） */
         .state-header { display: flex; gap: 4px; padding: 6px; background: #111; z-index: 100; }
-        .state-btn { flex: 1; height: 40px; border-radius: 4px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #444; }
+        .state-btn { flex: 1; height: 44px; border-radius: 4px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #444; text-align: center; line-height: 1.2; }
         .state-btn.active { border-color: #0f0; box-shadow: 0 0 8px #0f0; }
         .st-hazure { background: #333; }
         .st-don { background: #0040ff; }
@@ -30,44 +31,41 @@
         .info-box { text-align: center; }
         .info-label { font-size: 10px; color: #aaa; }
         .info-val { font-size: 20px; font-weight: bold; color: #fff; }
-        .val-slip { color: var(--yellow); font-size: 30px; }
+        .val-slip { color: var(--yellow); font-size: 32px; }
 
-        /* 上段枠を強調（ここが狙い位置） */
-        .target-marker { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: var(--sym-h); border: 2px solid #000; z-index: 15; pointer-events: none; background: rgba(0,0,0,0.05); }
         .frame-blue { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 6px solid var(--blue); z-index: 10; pointer-events: none; }
         .frame-red { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 6px solid var(--red); z-index: 10; pointer-events: none; }
 
-        .flag-grid { padding: 5px; background: #1a1a1a; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-height: 35%; overflow-y: auto; }
-        .flag-btn { height: 40px; background: #333; border: 1px solid #555; border-radius: 4px; color: #fff; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .flag-grid { padding: 5px; background: #1a1a1a; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-height: 38%; overflow-y: auto; }
+        .flag-btn { height: 40px; background: #333; border: 1px solid #555; border-radius: 4px; color: #fff; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; }
         .flag-btn.active { border: 2px solid #fff; }
-        .flag-btn.disabled { opacity: 0.15; pointer-events: none; }
+        .flag-btn.disabled { opacity: 0.15; pointer-events: none; filter: grayscale(1); }
 
         .c-hazure { background: #444; } .c-rep { background: #0044bb; } .c-bell { background: #887700; } 
         .c-suika { background: #005500; } .c-che { background: #880000; } .c-tok { background: #660099; }
         .flag-btn.active.c-tok { background: var(--purple); }
 
         footer { padding: 8px; }
-        .exec-btn { width: 100%; height: 50px; background: linear-gradient(#ff4444, #880000); border-radius: 8px; color: #fff; font-size: 20px; font-weight: bold; }
+        .exec-btn { width: 100%; height: 50px; background: linear-gradient(#ff4444, #880000); border-radius: 8px; color: #fff; font-size: 22px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <header class="state-header">
-    <div id="st-hazure" class="state-btn st-hazure active" onclick="setState('hazure')">未成立</div>
-    <div id="st-don" class="state-btn st-don" onclick="setState('don')">ドン成立</div>
-    <div id="st-seven" class="state-btn st-seven" onclick="setState('seven')">７成立</div>
-    <div id="st-reg" class="state-btn st-reg" onclick="setState('reg')">Reg成立</div>
+    <div id="st-hazure" class="state-btn st-hazure active" onclick="setState('hazure')">ボーナス<br>未成立</div>
+    <div id="st-don" class="state-btn st-don" onclick="setState('don')">ドンビッグ<br>成立</div>
+    <div id="st-seven" class="state-btn st-seven" onclick="setState('seven')">７ビッグ<br>成立</div>
+    <div id="st-reg" class="state-btn st-reg" onclick="setState('reg')">Regボーナス<br>成立</div>
 </header>
 
 <main>
     <div class="reel-window" id="touch-area">
-        <div class="target-marker"></div>
         <div class="frame-blue"></div>
         <div id="strip-in" class="strip"></div>
     </div>
     <div class="center-info">
         <div class="info-box"><div class="info-label">上段狙い</div><div id="val-target" class="info-val">1</div></div>
-        <div class="info-box" style="border-y:1px solid #333;"><div class="info-label">滑り</div><div id="val-slip" class="info-val val-slip">--</div></div>
+        <div class="info-box" style="border-top:1px solid #333; border-bottom:1px solid #333;"><div class="info-label">滑り</div><div id="val-slip" class="info-val val-slip">--</div></div>
         <div class="info-box"><div class="info-label">上段停止</div><div id="val-pos" class="info-val">--</div></div>
     </div>
     <div class="reel-window">
@@ -99,10 +97,6 @@
 
 <script>
     const REEL_COUNT = 21;
-    // 配列表（1:ドン, 2:チェリー... 9:暖簾... 21:七）
-    const REEL_DATA = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
-    
-    // 省略されていた制御データ（hanabi.html準拠）
     const DATA_SETS = {
         'hazure': { 21:[1,2,1,1,2,3,2,2,4,4,4,0,0,0,0,0], 20:[0,0,2,0,3,4,0,0,1,1,1,0,0,0,0,0], 19:[0,1,3,1,4,4,0,0,2,2,2,0,0,0,0,0], 18:[1,1,0,1,0,0,2,2,3,3,3,0,0,0,0,0], 17:[0,0,1,0,0,1,1,1,4,4,4,0,0,0,0,0], 16:[2,1,2,1,1,2,3,3,0,0,0,0,0,0,0,0], 15:[3,2,3,2,2,3,3,3,1,1,1,0,0,0,0,0], 14:[3,3,1,3,3,4,4,4,0,0,2,0,0,0,0,0], 13:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0], 12:[1,0,3,0,0,1,1,1,2,2,4,0,0,0,0,0], 11:[0,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0], 10:[1,0,1,1,2,3,2,2,4,4,4,0,0,0,0,0], 9:[2,1,2,1,3,4,2,2,1,1,1,0,0,0,0,0], 8:[0,2,0,2,4,0,3,3,2,2,2,0,0,0,0,0], 7:[1,0,1,0,0,0,4,4,3,3,3,0,0,0,0,0], 6:[2,1,2,1,2,1,1,1,0,0,0,0,0,0,0,0], 5:[3,2,3,2,2,3,2,2,1,1,1,0,0,0,0,0], 4:[4,3,1,3,3,4,3,3,0,0,2,0,0,0,0,0], 3:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0], 2:[1,0,3,0,0,0,0,0,2,2,4,0,0,0,0,0], 1:[1,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0] },
         'don': { 21:[3,2,1,2,2,2,3,3,4,4,4,3,1,1,3,3], 20:[4,0,2,0,3,4,4,4,1,1,1,4,0,2,4,4], 19:[0,1,0,1,4,4,0,0,2,2,2,4,0,0,2,0], 18:[1,1,1,1,0,0,2,2,3,3,3,1,1,1,2,1], 17:[0,0,1,0,0,1,1,1,4,4,4,1,2,2,4,0], 16:[2,1,3,1,1,1,3,3,0,0,0,1,3,2,3,2], 15:[2,2,3,2,2,3,3,3,1,1,1,4,3,4,3,2], 14:[3,3,4,3,3,4,4,4,0,0,2,4,4,4,3,3], 13:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0], 12:[1,0,0,0,0,1,1,1,2,2,4,1,1,1,1,1], 11:[0,1,1,1,1,1,0,0,3,3,3,0,0,0,0,0], 10:[1,0,2,0,3,2,1,1,4,4,4,1,1,1,0,1], 9:[1,1,4,1,4,4,2,2,1,1,1,2,2,1,2,1], 8:[1,2,0,2,0,0,3,3,2,2,2,3,2,1,1,1], 7:[1,0,1,0,0,0,4,4,3,3,1,4,2,3,4,3], 6:[1,1,2,1,1,1,1,1,0,0,0,2,4,3,3,3], 5:[3,2,2,2,3,2,2,2,1,1,1,2,4,4,4,4], 4:[3,3,4,3,3,3,3,3,0,0,0,4,4,3,4,3], 3:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0], 2:[1,0,1,0,0,0,1,1,2,2,2,1,1,1,1,1], 1:[2,1,0,1,1,1,2,2,3,3,3,2,0,0,2,2] },
@@ -112,7 +106,7 @@
 
     let selectedState = 'hazure';
     let selectedFlagIdx = 0;
-    let selectedTopIdx = 1; // 上段狙い位置
+    let selectedTopIdx = 1;
     let SH = 0;
 
     function setState(id) {
@@ -139,13 +133,10 @@
     }
 
     function execute() {
-        // 重要：上段(Top)が狙い位置のとき、制御データの参照キーは下段(Bot = Top - 2)
         let refIdx = selectedTopIdx - 2;
         while (refIdx < 1) refIdx += REEL_COUNT;
 
         const slip = DATA_SETS[selectedState][refIdx][selectedFlagIdx];
-        
-        // 停止位置（上段基準）＝ 狙い位置 ＋ 滑り
         let stopTopIdx = selectedTopIdx + slip;
         while (stopTopIdx > REEL_COUNT) stopTopIdx -= REEL_COUNT;
 
@@ -154,9 +145,7 @@
         
         const outStrip = document.getElementById('strip-out');
         outStrip.style.transition = 'transform 0.15s ease-out';
-        // 描画位置：上段（枠の2コマ目）にstopTopIdxを合わせる
-        const y = -(REEL_COUNT + stopTopIdx - 3) * SH;
-        outStrip.style.transform = `translateY(${y}px)`;
+        outStrip.style.transform = `translateY(${-(REEL_COUNT + stopTopIdx - 3) * SH}px)`;
     }
 
     function createStrips() {
@@ -169,7 +158,6 @@
                 const d = document.createElement('div');
                 d.className = 'symbol';
                 d.style.height = SH + 'px';
-                // 配列：1ドン, 9暖簾(BAR)を正確に反映
                 d.style.backgroundPosition = `0 ${(symIdx - 1) * 5}%`;
                 el.appendChild(d);
             }
@@ -180,37 +168,22 @@
     function updateInReel(animate = true) {
         const strip = document.getElementById('strip-in');
         strip.style.transition = animate ? 'transform 0.1s ease-out' : 'none';
-        // 上段（枠の上から2つ目のコマ）にselectedTopIdxを配置
-        const y = -(REEL_COUNT + selectedTopIdx - 3) * SH;
-        strip.style.transform = `translateY(${y}px)`;
+        strip.style.transform = `translateY(${-(REEL_COUNT + selectedTopIdx - 3) * SH}px)`;
         document.getElementById('val-target').innerText = selectedTopIdx;
     }
 
     const touchArea = document.getElementById('touch-area');
     let startY = 0, startIdx = 0;
-
-    touchArea.addEventListener('touchstart', e => {
-        startY = e.touches[0].pageY;
-        startIdx = selectedTopIdx;
-    });
-
+    touchArea.addEventListener('touchstart', e => { startY = e.touches[0].pageY; startIdx = selectedTopIdx; });
     touchArea.addEventListener('touchmove', e => {
         e.preventDefault();
-        let diff = e.touches[0].pageY - startY;
-        let moveCount = Math.round(diff / SH);
-        let newIdx = startIdx - moveCount; // 下スワイプでインデックス減少
+        let moveCount = Math.round((e.touches[0].pageY - startY) / SH);
+        let newIdx = startIdx - moveCount;
         while(newIdx < 1) newIdx += REEL_COUNT;
         while(newIdx > REEL_COUNT) newIdx -= REEL_COUNT;
-        
-        if(newIdx !== selectedTopIdx) {
-            selectedTopIdx = newIdx;
-            updateInReel(false);
-        }
+        if(newIdx !== selectedTopIdx) { selectedTopIdx = newIdx; updateInReel(false); }
     });
-
-    touchArea.addEventListener('touchend', () => {
-        updateInReel(true);
-    });
+    touchArea.addEventListener('touchend', () => { updateInReel(true); });
 
     window.onload = () => { createStrips(); updateFlagUI(); };
 </script>
