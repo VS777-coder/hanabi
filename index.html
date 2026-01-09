@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hanabi Satellite Tracker</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 5px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* 状態フラグ：カラー調整 */
+        .state-tabs { display: flex; width: 100%; background: #222; border: 1px solid #444; border-radius: 4px; overflow: hidden; margin-bottom: 5px; flex-shrink: 0; }
+        .state-tab { flex: 1; text-align: center; padding: 12px 2px; font-size: 11px; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-hazure.active { background: #eee; color: #000; }
+        .tab-don.active { background: #f44336; color: #fff; } /* ドン：赤 */
+        .tab-seven.active { background: #d50000; color: #fff; } /* 7：濃い赤 */
+        .tab-bar.active { background: #000; color: #fff; border-bottom: 3px solid #777; }
+
+        .main-content { display: flex; flex-direction: row-reverse; flex: 1; overflow: hidden; gap: 4px; width: 100%; }
+
+        /* 右側：7コマ軌道図 */
+        .reel-frame { 
+            width: 100px; height: 490px; background: #000; border: 2px solid #444; border-radius: 8px; 
+            overflow: hidden; flex-shrink: 0; position: relative; touch-action: none;
+        }
+        .reel-window { height: 100%; display: flex; flex-direction: column; }
+        .symbol { height: 70px; display: flex; align-items: center; border-bottom: 1px solid #1a1a1a; }
+        .index-num { width: 22px; color: #ffd700; text-align: center; font-size: 10px; font-weight: bold; }
+        .symbol-image { flex-grow: 1; height: 100%; background-image: url('hanabi.png'); background-size: 100% 2100%; }
+        .center-guide { position: absolute; top: 140px; left: 0; width: 100%; height: 210px; border: 3px solid #ff0000; background: rgba(255, 0, 0, 0.05); pointer-events: none; z-index: 10; box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.3); }
+
+        /* 左側：成立役リスト（13行カラー調整） */
+        .result-area { flex: 1; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow-y: auto; }
+        .flag-list { padding: 2px; display: flex; flex-direction: column; height: 100%; }
+        
+        .flag-item { 
+            display: flex; align-items: center; 
+            height: calc(100% / 13); min-height: 36px; padding: 0 6px; 
+            border-bottom: 1px solid #222; border-left: 5px solid rgba(0,0,0,0.5); 
+        }
+        .flag-name { font-size: 15px; font-weight: bold; width: 75px; flex-shrink: 0; }
+        .flag-data { font-size: 14px; color: #fff; font-family: monospace; letter-spacing: 0px; }
+
+        /* 成立役別カラー */
+        .c-rep { border-left-color: #00e5ff; color: #00e5ff; background: rgba(0, 229, 255, 0.05); } 
+        .c-bell { border-left-color: #ffea00; color: #ffea00; background: rgba(255, 234, 0, 0.05); } 
+        .c-suika { border-left-color: #00c853; color: #00c853; background: rgba(0, 200, 83, 0.05); } 
+        .c-cher { border-left-color: #f50057; color: #f50057; background: rgba(245, 0, 87, 0.05); }
+        .c-hazure { border-left-color: #666; color: #ccc; }
+        .c-tok { border-left-color: #e040fb; color: #e040fb; background: rgba(170, 0, 255, 0.05); }
+    </style>
+</head>
+<body>
+
+    <div class="state-tabs">
+        <div class="state-tab tab-hazure active" onclick="switchState('hazure')">未成立</div>
+        <div class="state-tab tab-don" onclick="switchState('don_flag')">ドン成立</div>
+        <div class="state-tab tab-seven" onclick="switchState('seven_flag')">７成立</div>
+        <div class="state-tab tab-bar" onclick="switchState('bar_flag')">Reg成立</div>
+    </div>
+
+    <div class="main-content">
+        <div id="reel-touch" class="reel-frame">
+            <div class="center-guide"></div>
+            <div id="reel-window" class="reel-window"></div>
+        </div>
+
+        <div class="result-area">
+            <div id="flag-list" class="flag-list"></div>
+        </div>
+    </div>
+
+<script>
+    const FLAG_DEFS = [
+        { k: "hazure", n: "ハズレ", c: "hazure" }, { k: "normal_rep", n: "リプレイ", c: "rep" },
+        { k: "ice", n: "氷", c: "suika" }, { k: "cherry", n: "チェリー", c: "cher" },
+        { k: "wind", n: "風", c: "suika" }, { k: "bell", n: "ベル", c: "bell" },
+        { k: "tokA", n: "特役A", c: "tok" }, { k: "tokB", n: "特役B", c: "tok" },
+        { k: "tokC", n: "特役C", c: "tok" }, { k: "tokD", n: "特役D", c: "tok" }, { k: "tokE", n: "特役E", c: "tok" }
+    ];
+
+    // 新規衛星HANABIの軌道データ
+    const SATELLITE_DATA = {
+        hazure: {
+            hazure: [2,2,0,1,1,1,2,3,4,0,1,2,3,4,0,1,2,1,0,1,0],
+            normal_rep: [0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0],
+            ice: [3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3],
+            cherry: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            wind: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            bell: [1,1,3,3,4,0,1,1,1,1,1,3,3,4,0,1,1,1,1,2,0],
+            tokA: Array(21).fill(null), tokB: Array(21).fill(null), tokC: Array(21).fill(null), tokD: Array(21).fill(null), tokE: Array(21).fill(null)
+        },
+        don_flag: {
+            hazure: [2,2,4,4,0,1,2,3,4,1,0,2,2,3,0,1,0,0,0,0,0],
+            normal_rep: [0,1,2,3,4,0,1,2,3,4,0,4,2,3,4,0,1,0,3,2,3],
+            ice: [2,3,4,4,0,1,2,3,4,0,2,2,4,4,0,1,0,1,2,3,1],
+            cherry: [4,0,1,0,1,2,3,4,4,1,2,0,1,0,1,2,3,4,1,2,3],
+            wind: [2,3,4,4,0,1,2,3,4,0,2,2,4,4,0,1,0,1,2,3,1],
+            bell: [1,1,2,4,0,1,1,2,4,0,2,4,2,4,0,1,2,3,4,2,1],
+            tokA: [2,2,4,4,0,1,2,3,4,1,2,2,4,4,0,1,0,0,0,0,0],
+            tokB: [2,2,4,4,0,1,2,3,4,1,0,2,2,3,0,1,0,0,0,0,0],
+            tokC: [2,2,4,4,0,1,2,3,4,1,2,2,4,4,0,1,0,0,0,0,0],
+            tokD: [1,4,3,4,0,1,2,3,4,2,2,2,2,4,0,0,0,1,1,3,3],
+            tokE: [2,2,4,4,0,1,2,3,4,1,0,2,2,3,0,1,0,0,0,0,0]
+        },
+        seven_flag: {
+            hazure: [1,1,3,3,0,1,0,0,0,1,1,1,3,3,4,1,2,3,4,1,1],
+            normal_rep: [0,1,2,3,4,0,1,0,1,2,0,1,2,3,4,0,1,0,1,2,3],
+            ice: [2,1,4,3,0,0,1,1,1,1,2,2,4,4,0,1,1,2,2,3,1],
+            cherry: [4,0,1,0,1,2,3,4,1,1,2,0,1,0,1,2,3,4,1,2,3],
+            wind: [2,1,4,3,0,0,1,1,1,1,2,2,4,4,0,1,1,2,2,3,1],
+            bell: [2,2,4,4,0,1,1,1,0,1,0,1,2,3,0,1,0,1,2,0,0],
+            tokA: [2,1,4,3,0,0,1,1,0,1,2,2,4,4,0,1,1,2,2,3,1],
+            tokB: [1,3,3,4,0,1,0,1,0,1,1,1,3,3,4,1,0,1,2,1,1],
+            tokC: [0,1,3,3,0,1,2,1,0,0,1,2,3,4,0,1,2,1,2,3,0],
+            tokD: [2,3,3,4,4,1,2,1,0,0,1,2,3,4,4,1,0,1,2,3,0],
+            tokE: [2,3,3,4,4,1,2,1,0,0,1,2,3,4,4,1,0,1,2,3,0]
+        },
+        bar_flag: {
+            hazure: [1,1,3,3,0,1,0,0,0,1,1,1,3,3,0,1,2,3,4,1,1],
+            normal_rep: [0,1,2,3,4,0,1,0,1,2,0,1,2,3,4,0,1,0,1,2,3],
+            ice: [2,1,4,3,0,0,1,1,0,0,2,2,4,4,0,1,2,3,4,3,1],
+            cherry: [4,0,1,0,1,2,3,4,0,1,2,0,1,0,1,2,3,4,4,2,3],
+            wind: [2,1,4,3,0,0,1,1,0,0,2,2,4,4,0,1,2,3,4,3,1],
+            bell: [1,1,2,4,0,1,1,2,4,0,0,4,2,3,0,1,2,3,4,2,1],
+            tokA: [0,1,3,3,0,1,2,1,0,0,1,2,3,4,0,1,2,3,4,3,1],
+            tokB: [2,3,3,4,0,1,2,1,0,0,1,2,3,4,0,1,0,1,2,3,1],
+            tokC: [0,1,3,3,0,1,2,1,0,0,1,2,3,4,0,1,2,3,4,3,0],
+            tokD: [2,2,4,4,0,1,2,3,0,1,0,2,3,3,0,1,0,0,0,3,0],
+            tokE: [2,3,3,4,0,1,2,1,0,0,1,2,3,4,0,1,0,1,2,3,0]
+        }
+    };
+
+    let currentState = 'hazure', currentCenter = 18;
+    let startY = 0;
+
+    function init() {
+        const frame = document.getElementById('reel-touch');
+        frame.addEventListener('touchstart', e => startY = e.touches[0].pageY);
+        frame.addEventListener('touchend', e => {
+            const diff = startY - e.changedTouches[0].pageY;
+            if (Math.abs(diff) > 20) moveReel(diff > 0 ? 1 : -1);
+        });
+        updateView();
+    }
+
+    function moveReel(dir) {
+        currentCenter += dir;
+        if (currentCenter > 21) currentCenter = 1;
+        if (currentCenter < 1) currentCenter = 21;
+        updateView();
+    }
+
+    function switchState(s) {
+        currentState = s;
+        document.querySelectorAll('.state-tab').forEach(t => t.classList.toggle('active', t.outerHTML.includes(s)));
+        updateResults();
+    }
+
+    function updateView() {
+        const win = document.getElementById('reel-window');
+        win.innerHTML = '';
+        for (let i = 3; i >= -3; i--) {
+            let r = currentCenter + i;
+            while (r > 21) r -= 21;
+            while (r < 1) r += 21;
+            const d = document.createElement('div');
+            d.className = 'symbol';
+            d.innerHTML = `<div class="index-num">${r}</div><div class="symbol-image" style="background-position:0% ${(21-r)*5}%"></div>`;
+            win.appendChild(d);
+        }
+        updateResults();
+    }
+
+    function updateResults() {
+        const list = document.getElementById('flag-list');
+        list.innerHTML = '';
+        const dataSet = SATELLITE_DATA[currentState];
+        FLAG_DEFS.forEach(f => {
+            const table = dataSet[f.k];
+            if (!table) return;
+            const slips = [];
+            for (let n = 1; n <= 21; n++) {
+                let low = (n === 1) ? 21 : n - 1;
+                const slip = table[21 - low];
+                if (slip === null) continue;
+                let mid = (low + slip + 1);
+                while (mid > 21) mid -= 21;
+                if (mid === currentCenter) slips.push(`[${slip}]`);
+            }
+            if (slips.length > 0) {
+                const item = document.createElement('div');
+                item.className = `flag-item c-${f.c}`;
+                item.innerHTML = `<div class="flag-name">${f.n}</div><div class="flag-data">${slips.join('')}</div>`;
+                list.appendChild(item);
+            }
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
