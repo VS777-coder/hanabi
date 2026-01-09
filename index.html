@@ -134,7 +134,7 @@
     const SH = 50; 
     let currentState = 'hazure';
     let selectedFlagIdx = 0;
-    // 初期表示を上段暖簾（14番）にするため、selectedTopIdxを14に設定
+    // 初期表示：現状のまま14番をselectedTopIdxとして保持
     let selectedTopIdx = 14;
 
     const DATA_SETS = {
@@ -148,6 +148,7 @@
         ['strip-in', 'strip-out'].forEach(id => {
             const el = document.getElementById(id);
             el.innerHTML = '';
+            // 画像の並びが1→21なら、表示順もそれに合わせる
             for(let i=0; i<63; i++) {
                 const idx = (i % REEL_COUNT) + 1;
                 const d = document.createElement('div');
@@ -163,6 +164,7 @@
     function updateInReel(animate = true) {
         const strip = document.getElementById('strip-in');
         strip.style.transition = animate ? 'transform 0.1s ease-out' : 'none';
+        // インデックスと表示位置を同期
         strip.style.transform = `translateY(${-(REEL_COUNT + selectedTopIdx - 1) * SH}px)`;
         let midIdx = selectedTopIdx + 1; 
         if(midIdx > REEL_COUNT) midIdx -= REEL_COUNT;
@@ -199,8 +201,9 @@
         if(midIdx > REEL_COUNT) midIdx -= REEL_COUNT;
         const slip = DATA_SETS[currentState][midIdx][selectedFlagIdx];
         
-        let stopMidIdx = midIdx + slip;
-        while(stopMidIdx > REEL_COUNT) stopMidIdx -= REEL_COUNT;
+        // 滑り方向をマイナス（インデックスが減る方向＝送り方向）に修正
+        let stopMidIdx = midIdx - slip;
+        while(stopMidIdx < 1) stopMidIdx += REEL_COUNT;
 
         document.getElementById('val-slip').innerText = slip;
         document.getElementById('val-result').innerText = stopMidIdx;
@@ -220,8 +223,9 @@
     
     touchArea.addEventListener('touchmove', e => {
         e.preventDefault();
+        // スワイプによるインデックス増減を反転（下スワイプでインデックス増＝リールが上に戻る動きに対応）
         let moveCount = Math.round((e.touches[0].pageY - startY) / SH);
-        let newIdx = startIdx - moveCount;
+        let newIdx = startIdx + moveCount; // ここをプラスに変更
         while(newIdx < 1) newIdx += REEL_COUNT;
         while(newIdx > REEL_COUNT) newIdx -= REEL_COUNT;
         if(newIdx !== selectedTopIdx) { 
