@@ -3,176 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hanabi Analyzer - Restored</title>
+    <title>Hanabi Analyzer - Absolute Correct</title>
     <style>
         :root {
-            --reel-w: 110px; 
-            --blue: #00bbff; --red: #ff3333; --yellow: #ffff00;
-            --cyan: #00ccff; --green: #00aa00;
+            --sH: 50px;
+            --rep: #0080ff; --bell: #eebb00; --suika: #00bb00; --cherry: #ff0000; --tok: #aa00ff;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
-        body { background: #000; color: #fff; font-family: sans-serif; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
-
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        body { background: #000; color: #fff; font-family: sans-serif; height: 100svh; overflow: hidden; display: flex; flex-direction: column; position: fixed; width: 100%; }
+        
         .state-header { display: flex; gap: 4px; padding: 6px; background: #111; flex-shrink: 0; }
-        .state-btn { flex: 1; height: 44px; border-radius: 4px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #444; text-align: center; color: #fff; }
+        .state-btn { flex: 1; height: 50px; border-radius: 4px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #444; text-align: center; color: #fff; }
         .state-btn.active { border-color: #0f0; box-shadow: 0 0 10px #0f0; }
-        #st-hazure { background: #333; }
-        #st-don { background: #0040ff; }
-        #st-seven { background: #ff0000; }
-        #st-reg { background: #222; border-color: #666; }
 
-        main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 0; touch-action: none; }
-        .reel-window { width: var(--reel-w); height: 350px; background: #fff; overflow: hidden; position: relative; border: 2px solid #333; }
-        .strip { width: 100%; position: absolute; left: 0; top: 0; pointer-events: none; }
-        .symbol { width: 100%; height: 50px; display: flex; align-items: center; justify-content: center; position: relative; }
-        .symbol-image { position: absolute; width: 100%; height: 100%; background-image: url('hanabi.png'); background-size: 100% 2100%; background-repeat: repeat-y; }
+        main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; overflow: hidden; }
+        .reel-window { width: 110px; height: calc(var(--sH) * 7); background: #fff; overflow-y: scroll; overflow-x: hidden; position: relative; border: 2px solid #333; scrollbar-width: none; }
+        .reel-window::-webkit-scrollbar { display: none; }
+        .strip { width: 100%; display: flex; flex-direction: column; }
+        .symbol { width: 100%; height: var(--sH); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .symbol-image { width: 100%; height: 100%; background-image: url('hanabi.png'); background-size: 100% 2100%; }
 
-        .frame-blue { position: absolute; top: 100px; width: 100%; height: 150px; border: 6px solid var(--blue); z-index: 10; pointer-events: none; }
-        .frame-red { position: absolute; top: 100px; width: 100%; height: 150px; border: 6px solid var(--red); z-index: 10; pointer-events: none; }
+        .frame-blue, .frame-red { position: absolute; top: calc(var(--sH) * 2); width: 110px; height: calc(var(--sH) * 3); border: 6px solid #00bbff; z-index: 10; pointer-events: none; }
+        .frame-red { border-color: #ff3333; }
 
-        .center-panel { display: flex; flex-direction: column; justify-content: space-between; width: 90px; height: 350px; padding: 10px 0; }
-        .info-box { background: #1a1a1a; border: 1px solid #333; border-radius: 4px; padding: 4px; text-align: center; }
-        .info-label { font-size: 9px; color: #aaa; }
+        .center-panel { display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 80px; text-align: center; }
+        .info-box { background: #111; border: 1px solid #333; padding: 4px; border-radius: 4px; }
+        .info-label { font-size: 9px; color: #888; }
         .info-val { font-size: 16px; font-weight: bold; }
-        .val-slip { color: var(--yellow); font-size: 32px; }
+        #val-slip { font-size: 32px; color: #ffff00; }
 
+        /* 成立役：ボタン自体に色付け */
         .flag-grid { padding: 4px; background: #111; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; flex-shrink: 0; }
-        .flag-btn { height: 38px; border-radius: 4px; color: #fff; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; border: 1px solid #444; }
-        .f-hazure { background: #444; }
-        .f-rep { background: var(--cyan); color: #000; }
-        .f-bell { background: var(--yellow); color: #000; }
-        .f-suika { background: var(--green); }
-        .f-che { background: var(--red); }
-        .f-tok { background: #660099; }
-        .flag-btn.active { border: 2px solid #fff; box-shadow: 0 0 5px #fff; }
+        .flag-btn { height: 40px; border-radius: 4px; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #000; color: #fff; text-shadow: 1px 1px 1px #000; text-align: center; line-height: 1.1; }
+        .flag-btn.active { border: 2px solid #fff; box-shadow: 0 0 8px #fff; transform: scale(0.98); }
+        .is-disabled { opacity: 0.15 !important; pointer-events: none; }
 
         footer { padding: 8px; background: #000; }
-        .exec-btn { width: 100%; height: 54px; background: linear-gradient(#ff4444, #880000); border-radius: 8px; color: #fff; font-size: 20px; font-weight: bold; border: 2px solid #ff9999; }
+        .exec-btn { width: 100%; height: 50px; background: linear-gradient(#f44, #800); border-radius: 8px; color: #fff; font-size: 20px; font-weight: bold; border: 2px solid #f99; }
     </style>
 </head>
 <body>
 
 <header class="state-header">
-    <div id="st-hazure" class="state-btn active" onclick="setState('hazure')">ボーナス<br>未成立</div>
-    <div id="st-don" class="state-btn" onclick="setState('don')">ドンビッグ<br>成立</div>
-    <div id="st-seven" class="state-btn" onclick="setState('seven')">７ビッグ<br>成立</div>
-    <div id="st-reg" class="state-btn" onclick="setState('reg')">Regボーナス<br>成立</div>
+    <div id="st-hazure" class="state-btn active" style="background:#333" onclick="setState('hazure')">ボーナス<br>未成立</div>
+    <div id="st-don" class="state-btn" style="background:#0040ff" onclick="setState('don')">ドンＢＩＧ<br>成立</div>
+    <div id="st-seven" class="state-btn" style="background:#ff0000" onclick="setState('seven')">七ＢＩＧ<br>成立</div>
+    <div id="st-reg" class="state-btn" style="background:#222; border-color:#666" onclick="setState('reg')">ＲＥＧ<br>成立</div>
 </header>
 
 <main>
-    <div class="reel-window" id="touch-area">
+    <div class="reel-window" id="winL">
         <div class="frame-blue"></div>
-        <div id="strip-in" class="strip"></div>
+        <div id="stripL" class="strip"></div>
     </div>
     <div class="center-panel">
-        <div class="info-box"><div class="info-label">ストップ(中段)</div><div id="val-input" class="info-val">--</div></div>
-        <div class="info-box"><div class="info-label">滑り</div><div id="val-slip" class="info-val val-slip">--</div></div>
-        <div class="info-box"><div class="info-label">停止(中段)</div><div id="val-result" class="info-val">--</div></div>
+        <div class="info-box"><div class="info-label">中段</div><div id="val-mid">--</div></div>
+        <div class="info-box"><div class="info-label">滑り</div><div id="val-slip">--</div></div>
+        <div class="info-box"><div class="info-label">停止</div><div id="val-res">--</div></div>
     </div>
-    <div class="reel-window">
+    <div class="reel-window" id="winR">
         <div class="frame-red"></div>
-        <div id="strip-out" class="strip"></div>
+        <div id="stripR" class="strip"></div>
     </div>
 </main>
 
 <div class="flag-grid" id="flag-container">
-    <div class="flag-btn f-hazure active" onclick="setFlag(0, this)">ハズレ</div>
-    <div class="flag-btn f-rep" onclick="setFlag(1, this)">通常リプ</div>
-    <div class="flag-btn f-bell" onclick="setFlag(4, this)">ベルA</div>
-    <div class="flag-btn f-suika" onclick="setFlag(6, this)">氷A</div>
-    <div class="flag-btn f-che" onclick="setFlag(8, this)">チェA1</div>
-    <div class="flag-btn f-tok" onclick="setFlag(11, this)">特役A</div>
+    <div class="flag-btn active" onclick="setFlag(0, this)" style="background:#444">ハズレ</div>
+    <div class="flag-btn" onclick="setFlag(1, this)" style="background:var(--rep)">通常リプ</div>
+    <div class="flag-btn" onclick="setFlag(2, this)" style="background:var(--rep)">JACリプ</div>
+    <div class="flag-btn" onclick="setFlag(3, this)" style="background:var(--rep)">RTリプ</div>
+    <div class="flag-btn" onclick="setFlag(4, this)" style="background:var(--bell)">ベルＡ</div>
+    <div class="flag-btn" onclick="setFlag(5, this)" style="background:var(--bell)">ベルＢ</div>
+    <div class="flag-btn" onclick="setFlag(6, this)" style="background:var(--suika)">氷Ａ</div>
+    <div class="flag-btn" onclick="setFlag(7, this)" style="background:var(--suika)">氷Ｂ</div>
+    <div class="flag-btn" onclick="setFlag(8, this)" style="background:var(--cherry)">チェA1</div>
+    <div class="flag-btn" onclick="setFlag(9, this)" style="background:var(--cherry)">チェA2</div>
+    <div class="flag-btn" onclick="setFlag(10, this)" style="background:var(--cherry)">チェB</div>
+    <div class="flag-btn f-tok" onclick="setFlag(11, this)" style="background:var(--tok)">特殊役Ａ</div>
+    <div class="flag-btn f-tok" onclick="setFlag(12, this)" style="background:var(--tok)">特殊役Ｂ</div>
+    <div class="flag-btn f-tok" onclick="setFlag(13, this)" style="background:var(--tok)">特殊役Ｃ</div>
+    <div class="flag-btn f-tok" onclick="setFlag(14, this)" style="background:var(--tok)">特殊役Ｄ</div>
+    <div class="flag-btn f-tok" onclick="setFlag(15, this)" style="background:var(--tok)">特殊役Ｅ</div>
 </div>
 
 <footer><button class="exec-btn" onclick="executeControl()">解析実行</button></footer>
 
 <script>
-    const REEL_COUNT = 21;
-    const SH = 50;
-    // 配列番号（あなたのリスト）をそのまま定義。画像座標計算に使用
-    // 21:ブランク, 14:暖簾, 1:リプ
-    const REEL_ARRAY = [
-        "ブランク", "リプ", "氷", "７", "風鈴", "リプ", "チェリー", "暖簾", "風鈴", "氷", 
-        "リプ", "どん", "どん", "どん", "風鈴", "リプ", "チェリー", "どん", "風鈴", "氷", "リプ"
-    ].reverse(); // インデックス0を21番にするために反転
-
+    const sH = 50;
+    let selectedIdx = 13;
     let currentState = 'hazure';
     let selectedFlagIdx = 0;
-    let selectedTopIdx = 14; // 上段初期位置
 
-    // 以前の正常な滑りデータ
-    const DATA_SETS = {
-        'hazure': {13:[0,1,2,3,4,0], 14:[3,3,1,3,3,4]},
-        'don': {13:[0,4,0,4,0,4], 14:[3,3,4,3,3,4]}
-        // 必要に応じて他も追加
-    };
-
-    function init() {
-        ['strip-in', 'strip-out'].forEach(id => {
-            const el = document.getElementById(id);
-            el.innerHTML = '';
-            for(let i=0; i<63; i++) {
-                const num = 21 - (i % REEL_COUNT);
+    function build(id) {
+        const target = document.getElementById(id);
+        for(let s=0; s<3; s++) {
+            for(let i=21; i>=1; i--) {
                 const d = document.createElement('div');
                 d.className = 'symbol';
-                // あなたのリストの番号(num)に基づき、画像の特定位置を確実に参照
-                const pos = (num - 1) * 5; 
-                d.innerHTML = `<div class="symbol-image" style="background-position:0 ${pos}%"></div>`;
-                el.appendChild(d);
+                // あなたのメモ通りの座標を固定
+                d.innerHTML = `<div class="symbol-image" style="background-position:0 ${(21-i)*5}%"></div>`;
+                target.appendChild(d);
             }
-        });
-        updateReel(false);
-        // 右リールも同期
-        const stripOut = document.getElementById('strip-out');
-        const offset = 21 - selectedTopIdx;
-        stripOut.style.transform = `translateY(${-(REEL_COUNT + offset) * SH}px)`;
+        }
     }
 
-    function updateReel(animate = true) {
-        const strip = document.getElementById('strip-in');
-        strip.style.transition = animate ? 'transform 0.1s ease-out' : 'none';
-        const offset = 21 - selectedTopIdx;
-        strip.style.transform = `translateY(${-(REEL_COUNT + offset) * SH}px)`;
-        
-        let midIdx = selectedTopIdx - 1;
-        if(midIdx < 1) midIdx = 21;
-        document.getElementById('val-input').innerText = midIdx;
+    const winL = document.getElementById('winL');
+    winL.onscroll = () => {
+        const rawIdx = Math.round(winL.scrollTop / sH);
+        selectedIdx = 21 - ((rawIdx + 2) % 21);
+        if(selectedIdx === 0) selectedIdx = 21;
+        document.getElementById('val-mid').innerText = selectedIdx;
+    };
+
+    function sync(idx) {
+        const targetPos = (21 + (21 - idx) - 2) * sH; 
+        winL.scrollTo({ top: targetPos, behavior: 'auto' });
     }
+
+    // 滑りデータ（ハズレのみ例示、ドン・七・REGは成立時に対応するフラグボタンを有効化）
+    const DATA = {
+        'hazure': {21:[1,2,1,1,2,3,2,2,4,4,4,0,0,0,0,0],20:[0,0,2,0,3,4,0,0,1,1,1,0,0,0,0,0],19:[0,1,3,1,4,4,0,0,2,2,2,0,0,0,0,0],18:[1,1,0,1,0,0,2,2,3,3,3,0,0,0,0,0],17:[0,0,1,0,0,1,1,1,4,4,4,0,0,0,0,0],16:[2,1,2,1,1,2,3,3,0,0,0,0,0,0,0,0],15:[3,2,3,2,2,3,3,3,1,1,1,0,0,0,0,0],14:[3,3,1,3,3,4,4,4,0,0,2,0,0,0,0,0],13:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0],12:[1,0,3,0,0,1,1,1,2,2,4,0,0,0,0,0],11:[0,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0],10:[1,0,1,1,2,3,2,2,4,4,4,0,0,0,0,0],9:[2,1,2,1,3,4,2,2,1,1,1,0,0,0,0,0],8:[0,2,0,2,4,0,3,3,2,2,2,0,0,0,0,0],7:[1,0,1,0,0,0,4,4,3,3,3,0,0,0,0,0],6:[2,1,2,1,2,1,1,1,0,0,0,0,0,0,0,0],5:[3,2,3,2,2,3,2,2,1,1,1,0,0,0,0,0],4:[4,3,1,3,3,4,3,3,0,0,2,0,0,0,0,0],3:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0],2:[1,0,3,0,0,0,0,0,2,2,4,0,0,0,0,0],1:[1,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0]},
+        'don': {13:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0], 14:[3,3,4,3,3,4,4,4,0,0,2,4,4,4,3,3]}
+    };
 
     function executeControl() {
-        let midIdx = parseInt(document.getElementById('val-input').innerText);
-        const slip = (DATA_SETS[currentState] && DATA_SETS[currentState][midIdx]) ? DATA_SETS[currentState][midIdx][selectedFlagIdx] : 0;
-        
-        let stopMidIdx = midIdx + slip;
-        while(stopMidIdx > 21) stopMidIdx -= 21;
+        const mid = selectedIdx;
+        const slip = (DATA[currentState] && DATA[currentState][mid]) ? DATA[currentState][mid][selectedFlagIdx] : 0;
+        let stopMid = mid + slip; if(stopMid > 21) stopMid -= 21;
 
         document.getElementById('val-slip').innerText = slip;
-        document.getElementById('val-result').innerText = stopMidIdx;
+        document.getElementById('val-res').innerText = stopMid;
 
-        const stripOut = document.getElementById('strip-out');
-        let stopTopIdx = stopMidIdx + 1;
-        if(stopTopIdx > 21) stopTopIdx = 1;
-        const offsetOut = 21 - stopTopIdx;
-        stripOut.style.transition = 'transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1)';
-        stripOut.style.transform = `translateY(${-(REEL_COUNT + offsetOut) * SH}px)`;
+        const winR = document.getElementById('winR');
+        const stopPos = (21 + (21 - stopMid) - 2) * sH;
+        winR.scrollTo({ top: stopPos, behavior: 'smooth' });
     }
-
-    const touchArea = document.getElementById('touch-area');
-    let startY = 0, startIdx = 0;
-    touchArea.addEventListener('touchstart', e => { startY = e.touches[0].pageY; startIdx = selectedTopIdx; });
-    touchArea.addEventListener('touchmove', e => {
-        e.preventDefault();
-        let moveCount = Math.round((e.touches[0].pageY - startY) / SH);
-        let newIdx = startIdx + moveCount;
-        while(newIdx < 1) newIdx += 21;
-        while(newIdx > 21) newIdx -= 21;
-        if(newIdx !== selectedTopIdx) { selectedTopIdx = newIdx; updateReel(false); }
-    });
 
     function setState(id) {
         document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('st-' + id).classList.add('active');
         currentState = id;
+        // 未成立時は特殊役を無効化
+        document.querySelectorAll('.f-tok').forEach(b => b.classList.toggle('is-disabled', id === 'hazure'));
     }
 
     function setFlag(idx, btn) {
@@ -181,7 +153,10 @@
         selectedFlagIdx = idx;
     }
 
-    window.onload = init;
+    window.onload = () => {
+        build('stripL'); build('stripR');
+        setTimeout(() => { sync(13); setState('hazure'); }, 100);
+    };
 </script>
 </body>
 </html>
