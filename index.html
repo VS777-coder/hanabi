@@ -3,98 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hanabi Mobile - VS Style Professional</title>
+    <title>Hanabi Mobile - Fixed Logic</title>
     <style>
         :root {
             --reel-w: 125px; 
-            --sym-h: calc(100vh / 19.5); /* 7コマが画面に収まる比率 */
+            --sym-h: calc(100vh / 20); 
             --red: #ff3333; --blue: #3399ff; --green: #22cc22; --yellow: #ffff00; --purple: #cc33ff;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            background: #000; color: #fff; font-family: sans-serif;
-            margin: 0; height: 100svh; overflow: hidden;
-            display: flex; flex-direction: column;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        body { background: #000; color: #fff; font-family: sans-serif; height: 100svh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* 状態選択 */
-        .state-header { display: flex; gap: 4px; padding: 6px; background: #111; z-index: 100; }
-        .state-btn {
-            flex: 1; height: 40px; border-radius: 4px; font-size: 11px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center; border: 2px solid #444;
-        }
+        .state-header { display: flex; gap: 4px; padding: 6px; background: #111; }
+        .state-btn { flex: 1; height: 40px; border-radius: 4px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #444; }
         .state-btn.active { border-color: #0f0; box-shadow: 0 0 8px #0f0; }
         .st-hazure { background: #333; color: #fff; }
         .st-don { background: #0040ff; color: #fff; }
         .st-seven { background: #ff0000; color: #fff; }
         .st-reg { background: #222; color: #fff; border: 1px solid #666; }
 
-        /* リールエリア：7コマ表示 */
-        main {
-            flex: 1; display: flex; align-items: center; justify-content: center;
-            background: #000; padding: 0 4px; gap: 4px;
-        }
-        .reel-window {
-            width: var(--reel-w); height: calc(var(--sym-h) * 7);
-            background: #fff; overflow: hidden; position: relative;
-            border: 2px solid #333;
-        }
-        .strip { width: 100%; position: absolute; }
-        .symbol {
-            width: 100%; height: var(--sym-h);
-            background-image: url('hanabi.png');
-            background-size: 100% 2100%;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-        }
+        main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .reel-window { width: var(--reel-w); height: calc(var(--sym-h) * 7); background: #fff; overflow: hidden; position: relative; border: 2px solid #333; }
+        .strip { width: 100%; position: absolute; transition: transform 0.1s ease-out; }
+        .symbol { width: 100%; height: var(--sym-h); background-image: url('hanabi.png'); background-size: 100% 2100%; border-bottom: 1px solid rgba(0,0,0,0.1); }
 
-        /* 中央情報パネル */
-        .center-info {
-            display: flex; flex-direction: column; justify-content: space-around;
-            height: calc(var(--sym-h) * 5); width: 85px; background: #111;
-            border: 1px solid #333;
-        }
-        .info-box { text-align: center; display: flex; flex-direction: column; justify-content: center; }
-        .info-label { font-size: 9px; color: #aaa; margin-bottom: 2px; }
+        .center-info { display: flex; flex-direction: column; justify-content: space-around; height: calc(var(--sym-h) * 5); width: 85px; background: #111; border: 1px solid #333; }
+        .info-box { text-align: center; }
+        .info-label { font-size: 9px; color: #aaa; }
         .info-val { font-size: 20px; font-weight: bold; color: #fff; }
         .val-slip { color: var(--yellow); font-size: 28px; }
 
-        /* 枠線の強化（太く） */
-        .frame-blue { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 5px solid var(--blue); z-index: 10; pointer-events: none; }
-        .frame-red { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 5px solid var(--red); z-index: 10; pointer-events: none; }
+        /* 枠線強化 */
+        .frame-blue { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 6px solid var(--blue); z-index: 10; pointer-events: none; }
+        .frame-red { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 6px solid var(--red); z-index: 10; pointer-events: none; }
 
-        /* 成立役タイル */
-        .flag-grid {
-            padding: 4px; background: #1a1a1a; display: grid;
-            grid-template-columns: repeat(4, 1fr); gap: 3px;
-            max-height: 40%; overflow-y: auto; border-top: 1px solid #333;
-        }
-        .flag-btn {
-            height: 38px; background: #333; border: 1px solid #555; border-radius: 4px;
-            color: #fff; font-size: 9px; font-weight: bold;
-            display: flex; align-items: center; justify-content: center; text-align: center;
-        }
-        .flag-btn.active { border: 2px solid #fff; box-shadow: inset 0 0 8px rgba(0,0,0,0.8); }
+        .flag-grid { padding: 4px; background: #1a1a1a; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; max-height: 40%; overflow-y: auto; border-top: 1px solid #333; }
+        .flag-btn { height: 38px; background: #333; border: 1px solid #555; border-radius: 4px; color: #fff; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .flag-btn.active { border: 2px solid #fff; }
         .flag-btn.disabled { opacity: 0.1; pointer-events: none; }
 
-        /* 配色 */
+        /* カラー設定 */
         .c-hazure { background: #444; }
         .c-rep { background: #0044bb; }
         .c-bell { background: #887700; }
         .c-suika { background: #005500; }
         .c-che { background: #880000; }
-        .c-tok { background: #660099; }
-
+        .c-tok { background: #550088; }
         .flag-btn.active.c-rep { background: var(--blue); }
-        .flag-btn.active.c-bell { background: var(--yellow); color: #000; }
+        .flag-btn.active.c-bell { background: var(--yellow); color:#000; }
         .flag-btn.active.c-suika { background: var(--green); }
         .flag-btn.active.c-che { background: var(--red); }
         .flag-btn.active.c-tok { background: var(--purple); }
 
-        footer { padding: 6px; background: #000; }
-        .exec-btn {
-            width: 100%; height: 50px; background: linear-gradient(#ff4444, #880000);
-            border: 1px solid #ff6666; border-radius: 8px; color: #fff; font-size: 20px; font-weight: bold;
-        }
+        footer { padding: 6px; }
+        .exec-btn { width: 100%; height: 50px; background: linear-gradient(#ff4444, #880000); border: 1px solid #ff6666; border-radius: 8px; color: #fff; font-size: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -111,22 +72,11 @@
         <div class="frame-blue"></div>
         <div id="strip-in" class="strip"></div>
     </div>
-
     <div class="center-info">
-        <div class="info-box">
-            <div class="info-label">ストップ位置</div>
-            <div id="val-target" class="info-val">18</div>
-        </div>
-        <div class="info-box" style="border-top:1px solid #333; border-bottom:1px solid #333; padding: 5px 0;">
-            <div class="info-label">滑りコマ数</div>
-            <div id="val-slip" class="info-val val-slip">--</div>
-        </div>
-        <div class="info-box">
-            <div class="info-label">最終停止型</div>
-            <div id="val-pos" class="info-val">--</div>
-        </div>
+        <div class="info-box"><div class="info-label">ストップ位置</div><div id="val-target" class="info-val">1</div></div>
+        <div class="info-box" style="border-y:1px solid #333;"><div class="info-label">滑りコマ数</div><div id="val-slip" class="info-val val-slip">--</div></div>
+        <div class="info-box"><div class="info-label">最終停止型</div><div id="val-pos" class="info-val">--</div></div>
     </div>
-
     <div class="reel-window">
         <div class="frame-red"></div>
         <div id="strip-out" class="strip"></div>
@@ -152,11 +102,10 @@
     <div class="flag-btn c-tok" id="f-tok_e" onclick="setFlag('tok_e', 15)">特殊役E</div>
 </div>
 
-<footer>
-    <button class="exec-btn" onclick="execute()">解析実行</button>
-</footer>
+<footer><button class="exec-btn" onclick="execute()">解析実行</button></footer>
 
 <script>
+    // 1(Don)から21(Seven)の正順。21->1のループを考慮。
     const DATA_SETS = {
         'hazure': { 21:[1,2,1,1,2,3,2,2,4,4,4,0,0,0,0,0], 20:[0,0,2,0,3,4,0,0,1,1,1,0,0,0,0,0], 19:[0,1,3,1,4,4,0,0,2,2,2,0,0,0,0,0], 18:[1,1,0,1,0,0,2,2,3,3,3,0,0,0,0,0], 17:[0,0,1,0,0,1,1,1,4,4,4,0,0,0,0,0], 16:[2,1,2,1,1,2,3,3,0,0,0,0,0,0,0,0], 15:[3,2,3,2,2,3,3,3,1,1,1,0,0,0,0,0], 14:[3,3,1,3,3,4,4,4,0,0,2,0,0,0,0,0], 13:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0], 12:[1,0,3,0,0,1,1,1,2,2,4,0,0,0,0,0], 11:[0,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0], 10:[1,0,1,1,2,3,2,2,4,4,4,0,0,0,0,0], 9:[2,1,2,1,3,4,2,2,1,1,1,0,0,0,0,0], 8:[0,2,0,2,4,0,3,3,2,2,2,0,0,0,0,0], 7:[1,0,1,0,0,0,4,4,3,3,3,0,0,0,0,0], 6:[2,1,2,1,2,1,1,1,0,0,0,0,0,0,0,0], 5:[3,2,3,2,2,3,2,2,1,1,1,0,0,0,0,0], 4:[4,3,1,3,3,4,3,3,0,0,2,0,0,0,0,0], 3:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0], 2:[1,0,3,0,0,0,0,0,2,2,4,0,0,0,0,0], 1:[1,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0] },
         'don': { 21:[3,2,1,2,2,2,3,3,4,4,4,3,1,1,3,3], 20:[4,0,2,0,3,4,4,4,1,1,1,4,0,2,4,4], 19:[0,1,0,1,4,4,0,0,2,2,2,4,0,0,2,0], 18:[1,1,1,1,0,0,2,2,3,3,3,1,1,1,2,1], 17:[0,0,1,0,0,1,1,1,4,4,4,1,2,2,4,0], 16:[2,1,3,1,1,1,3,3,0,0,0,1,3,2,3,2], 15:[2,2,3,2,2,3,3,3,1,1,1,4,3,4,3,2], 14:[3,3,4,3,3,4,4,4,0,0,2,4,4,4,3,3], 13:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0], 12:[1,0,0,0,0,1,1,1,2,2,4,1,1,1,1,1], 11:[0,1,1,1,1,1,0,0,3,3,3,0,0,0,0,0], 10:[1,0,2,0,3,2,1,1,4,4,4,1,1,1,0,1], 9:[1,1,4,1,4,4,2,2,1,1,1,2,2,1,2,1], 8:[1,2,0,2,0,0,3,3,2,2,2,3,2,1,1,1], 7:[1,0,1,0,0,0,4,4,3,3,1,4,2,3,4,3], 6:[1,1,2,1,1,1,1,1,0,0,0,2,4,3,3,3], 5:[3,2,2,2,3,2,2,2,1,1,1,2,4,4,4,4], 4:[3,3,4,3,3,3,3,3,0,0,0,4,4,3,4,3], 3:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0], 2:[1,0,1,0,0,0,1,1,2,2,2,1,1,1,1,1], 1:[2,1,0,1,1,1,2,2,3,3,3,2,0,0,2,2] },
@@ -166,22 +115,13 @@
 
     let selectedState = 'hazure';
     let selectedFlagIdx = 0;
-    let selectedIdx = 18;
-    const SH = window.innerHeight / 19.5;
+    let selectedIdx = 1; // 1(Don)から開始
+    const SH = window.innerHeight / 20;
 
     function setState(id) {
         document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('st-' + id).classList.add('active');
         selectedState = id;
-        updateFlagDisabledStatus();
-    }
-
-    function updateFlagDisabledStatus() {
-        const isHazure = (selectedState === 'hazure');
-        ['tok_a','tok_b','tok_c','tok_d','tok_e'].forEach(key => {
-            const btn = document.getElementById('f-' + key);
-            btn.classList.toggle('disabled', isHazure);
-        });
     }
 
     function setFlag(id, idx) {
@@ -193,21 +133,23 @@
     function execute() {
         const slip = DATA_SETS[selectedState][selectedIdx][selectedFlagIdx];
         let stopIdx = selectedIdx + slip;
-        if (stopIdx > 21) stopIdx -= 21;
-
+        while (stopIdx > 21) stopIdx -= 21;
         document.getElementById('val-slip').innerText = slip;
         document.getElementById('val-pos').innerText = stopIdx;
-        document.getElementById('strip-out').style.transform = `translateY(${-(21 + stopIdx - 3) * SH}px)`;
+        // 右リール：最終停止位置（中段）へ
+        document.getElementById('strip-out').style.transform = `translateY(${-(21 + stopIdx - 4) * SH}px)`;
     }
 
     function createStrips() {
         ['strip-in', 'strip-out'].forEach(id => {
             const el = document.getElementById(id);
+            // 3ループ分描画（吸着・無限スクロール風のため）
             for(let i=0; i<63; i++) {
                 const symIdx = (i % 21) + 1;
                 const d = document.createElement('div');
                 d.className = 'symbol';
-                d.style.backgroundPosition = `0 ${(21 - symIdx) * 5}%`;
+                // hanabi.png内の位置を正確に参照。1=ドン, 21=七。
+                d.style.backgroundPosition = `0 ${(symIdx - 1) * 5}%`;
                 el.appendChild(d);
             }
         });
@@ -215,32 +157,35 @@
     }
 
     function updateInReel() {
-        document.getElementById('strip-in').style.transform = `translateY(${-(21 + selectedIdx - 3) * SH}px)`;
+        // 中段を基準。配列の並びを正順(1->21)に。
+        document.getElementById('strip-in').style.transform = `translateY(${-(21 + selectedIdx - 4) * SH}px)`;
         document.getElementById('val-target').innerText = selectedIdx;
     }
 
     const touchArea = document.getElementById('touch-area');
-    let sy = 0, currentOffset = 0;
-    touchArea.addEventListener('touchstart', e => { 
-        sy = e.touches[0].pageY; 
+    let startY = 0, startIdx = 0;
+    touchArea.addEventListener('touchstart', e => {
+        startY = e.touches[0].pageY;
+        startIdx = selectedIdx;
         touchArea.style.transition = 'none';
     });
     touchArea.addEventListener('touchmove', e => {
-        let diff = e.touches[0].pageY - sy;
-        let step = Math.round(diff / (SH / 2));
-        if(Math.abs(step) >= 1) {
-            selectedIdx += (step > 0 ? -1 : 1);
-            if(selectedIdx > 21) selectedIdx = 1; else if(selectedIdx < 1) selectedIdx = 21;
-            sy = e.touches[0].pageY;
+        let diff = e.touches[0].pageY - startY;
+        let moveIdx = Math.round(diff / SH);
+        let newIdx = startIdx - moveIdx;
+        while(newIdx < 1) newIdx += 21;
+        while(newIdx > 21) newIdx -= 21;
+        if(newIdx !== selectedIdx) {
+            selectedIdx = newIdx;
             updateInReel();
         }
     });
     touchArea.addEventListener('touchend', () => {
-        // 吸着処理：一番近いコマへスナップ
+        // 指を離した瞬間に最寄りのコマへ吸着（既にmove内で補正済みだが念のため再更新）
         updateInReel();
     });
 
-    window.onload = () => { createStrips(); updateFlagDisabledStatus(); };
+    window.onload = () => { createStrips(); };
 </script>
 </body>
 </html>
