@@ -3,168 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hanabi Analyzer Pro</title>
+    <title>Hanabi Precision Analyzer</title>
     <style>
         :root {
-            --reel-w: 130px; 
-            --sym-h: calc(100vh / 20); 
-            --red: #ff3333; --blue: #3399ff; --green: #22cc22; --yellow: #ffff00; --purple: #cc33ff;
+            --reel-w: 110px; 
+            --sym-h: calc(100vh / 19); 
+            --blue: #00bbff; --red: #ff3333; --yellow: #ffd700;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: sans-serif; height: 100svh; overflow: hidden; display: flex; flex-direction: column; }
 
-        .state-header { display: flex; gap: 4px; padding: 6px; background: #111; z-index: 100; }
-        .state-btn { flex: 1; height: 44px; border-radius: 4px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #444; text-align: center; line-height: 1.2; }
-        .state-btn.active { border-color: #0f0; box-shadow: 0 0 8px #0f0; }
-        .st-hazure { background: #333; }
-        .st-don { background: #0040ff; }
-        .st-seven { background: #ff0000; }
-        .st-reg { background: #222; border: 1px solid #666; }
+        /* 状態ボタン */
+        .state-header { display: flex; gap: 4px; padding: 6px; background: #111; flex-shrink: 0; }
+        .state-btn { flex: 1; height: 44px; border-radius: 4px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #444; text-align: center; color: #fff; }
+        #st-hazure { background: #333; }
+        #st-don { background: #0040ff; }
+        #st-seven { background: #ff0000; }
+        #st-reg { background: #000; border-color: #666; }
+        .state-btn.active { border-color: #0f0; box-shadow: 0 0 10px #0f0; }
 
-        main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        /* リールエリア */
+        main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 0; }
         .reel-window { width: var(--reel-w); height: calc(var(--sym-h) * 7); background: #fff; overflow: hidden; position: relative; border: 2px solid #333; }
         .strip { width: 100%; position: absolute; left: 0; }
-        .symbol { width: 100%; height: var(--sym-h); background-image: url('hanabi.png'); background-size: 100% 2100%; }
+        .symbol { width: 100%; height: var(--sym-h); display: flex; align-items: center; justify-content: center; position: relative; }
+        .symbol-image { width: 100%; height: 100%; background-image: url('hanabi.png'); background-size: 100% 2100%; }
 
-        .center-info { display: flex; flex-direction: column; justify-content: space-around; height: calc(var(--sym-h) * 5); width: 95px; background: #111; border: 1px solid #333; }
-        .info-box { text-align: center; }
-        .info-label { font-size: 10px; color: #aaa; }
-        .info-val { font-size: 20px; font-weight: bold; color: #fff; }
+        /* 枠線：左=赤, 右=青 */
+        .frame-red { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 4px solid var(--red); z-index: 10; pointer-events: none; }
+        .frame-blue { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 4px solid var(--blue); z-index: 10; pointer-events: none; }
+
+        /* 中央パネル */
+        .center-panel { display: flex; flex-direction: column; justify-content: space-around; width: 95px; height: calc(var(--sym-h) * 5); }
+        .info-box { background: #1a1a1a; border: 1px solid #333; border-radius: 4px; padding: 4px; text-align: center; }
+        .info-label { font-size: 9px; color: #aaa; }
+        .info-val { font-size: 18px; font-weight: bold; }
         .val-slip { color: var(--yellow); font-size: 32px; }
 
-        .frame-blue { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 6px solid var(--blue); z-index: 10; pointer-events: none; }
-        .frame-red { position: absolute; top: calc(var(--sym-h) * 2); width: 100%; height: calc(var(--sym-h) * 3); border: 6px solid var(--red); z-index: 10; pointer-events: none; }
-
-        .flag-grid { padding: 5px; background: #1a1a1a; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-height: 38%; overflow-y: auto; }
-        .flag-btn { height: 40px; background: #333; border: 1px solid #555; border-radius: 4px; color: #fff; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; }
+        /* 成立役ボタン */
+        .flag-grid { padding: 4px; background: #111; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; max-height: 38%; overflow-y: auto; flex-shrink: 0; }
+        .flag-btn { height: 38px; border-radius: 4px; color: #fff; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; border: 1px solid #444; }
+        .f-hazure { background: #444; }
+        .f-rep { background: #0044bb; }
+        .f-bell { background: #887700; }
+        .f-suika { background: #005500; }
+        .f-che { background: #880000; }
+        .f-tok { background: #660099; }
         .flag-btn.active { border: 2px solid #fff; }
-        .flag-btn.disabled { opacity: 0.15; pointer-events: none; filter: grayscale(1); }
-
-        .c-hazure { background: #444; } .c-rep { background: #0044bb; } .c-bell { background: #887700; } 
-        .c-suika { background: #005500; } .c-che { background: #880000; } .c-tok { background: #660099; }
-        .flag-btn.active.c-tok { background: var(--purple); }
 
         footer { padding: 8px; }
-        .exec-btn { width: 100%; height: 50px; background: linear-gradient(#ff4444, #880000); border-radius: 8px; color: #fff; font-size: 22px; font-weight: bold; }
+        .exec-btn { width: 100%; height: 50px; background: linear-gradient(#ff4444, #880000); border-radius: 8px; color: #fff; font-size: 22px; font-weight: bold; border: 2px solid #ff9999; }
     </style>
 </head>
 <body>
 
 <header class="state-header">
-    <div id="st-hazure" class="state-btn st-hazure active" onclick="setState('hazure')">ボーナス<br>未成立</div>
-    <div id="st-don" class="state-btn st-don" onclick="setState('don')">ドンビッグ<br>成立</div>
-    <div id="st-seven" class="state-btn st-seven" onclick="setState('seven')">７ビッグ<br>成立</div>
-    <div id="st-reg" class="state-btn st-reg" onclick="setState('reg')">Regボーナス<br>成立</div>
+    <div id="st-hazure" class="state-btn active" onclick="setState('hazure')">ボーナス<br>未成立</div>
+    <div id="st-don" class="state-btn" onclick="setState('don')">ドンビッグ<br>成立</div>
+    <div id="st-seven" class="state-btn" onclick="setState('seven')">７ビッグ<br>成立</div>
+    <div id="st-reg" class="state-btn" onclick="setState('reg')">Regボーナス<br>成立</div>
 </header>
 
 <main>
     <div class="reel-window" id="touch-area">
-        <div class="frame-blue"></div>
+        <div class="frame-red"></div>
         <div id="strip-in" class="strip"></div>
     </div>
-    <div class="center-info">
-        <div class="info-box"><div class="info-label">上段狙い</div><div id="val-target" class="info-val">1</div></div>
-        <div class="info-box" style="border-top:1px solid #333; border-bottom:1px solid #333;"><div class="info-label">滑り</div><div id="val-slip" class="info-val val-slip">--</div></div>
-        <div class="info-box"><div class="info-label">上段停止</div><div id="val-pos" class="info-val">--</div></div>
+    <div class="center-panel">
+        <div class="info-box"><div class="info-label">ストップ位置</div><div id="val-input" class="info-val">--</div></div>
+        <div class="info-box"><div class="info-label">滑り</div><div id="val-slip" class="info-val val-slip">--</div></div>
+        <div class="info-box"><div class="info-label">最中停止型</div><div id="val-result" class="info-val">--</div></div>
     </div>
     <div class="reel-window">
-        <div class="frame-red"></div>
+        <div class="frame-blue"></div>
         <div id="strip-out" class="strip"></div>
     </div>
 </main>
 
-<div class="flag-grid" id="flag-container">
-    <div class="flag-btn active c-hazure" id="f-hazure" onclick="setFlag('hazure', 0)">ハズレ</div>
-    <div class="flag-btn c-rep" id="f-rep_n" onclick="setFlag('rep_n', 1)">通常リプ</div>
-    <div class="flag-btn c-rep" id="f-rep_j" onclick="setFlag('rep_j', 2)">JACリプ</div>
-    <div class="flag-btn c-rep" id="f-rep_rt" onclick="setFlag('rep_rt', 3)">RTリプ</div>
-    <div class="flag-btn c-bell" id="f-bell_a" onclick="setFlag('bell_a', 4)">ベルA</div>
-    <div class="flag-btn c-bell" id="f-bell_b" onclick="setFlag('bell_b', 5)">ベルB</div>
-    <div class="flag-btn c-suika" id="f-suika_a" onclick="setFlag('suika_a', 6)">氷A</div>
-    <div class="flag-btn c-suika" id="f-suika_b" onclick="setFlag('suika_b', 7)">氷B</div>
-    <div class="flag-btn c-che" id="f-che_a1" onclick="setFlag('che_a1', 8)">チェリーA1</div>
-    <div class="flag-btn c-che" id="f-che_a2" onclick="setFlag('che_a2', 9)">チェリーA2</div>
-    <div class="flag-btn c-che" id="f-che_b" onclick="setFlag('che_b', 10)">チェリーB</div>
-    <div class="flag-btn c-tok" id="f-tok_a" onclick="setFlag('tok_a', 11)">特殊役A</div>
-    <div class="flag-btn c-tok" id="f-tok_b" onclick="setFlag('tok_b', 12)">特殊役B</div>
-    <div class="flag-btn c-tok" id="f-tok_c" onclick="setFlag('tok_c', 13)">特殊役C</div>
-    <div class="flag-btn c-tok" id="f-tok_d" onclick="setFlag('tok_d', 14)">特殊役D</div>
-    <div class="flag-btn c-tok" id="f-tok_e" onclick="setFlag('tok_e', 15)">特殊役E</div>
+<div class="flag-grid">
+    <div class="flag-btn f-hazure active" onclick="setFlag(0, this)">ハズレ</div>
+    <div class="flag-btn f-rep" onclick="setFlag(1, this)">通常リプ</div>
+    <div class="flag-btn f-rep" onclick="setFlag(2, this)">JACリプ</div>
+    <div class="flag-btn f-rep" onclick="setFlag(3, this)">RTリプ</div>
+    <div class="flag-btn f-bell" onclick="setFlag(4, this)">ベルA</div>
+    <div class="flag-btn f-bell" onclick="setFlag(5, this)">ベルB</div>
+    <div class="flag-btn f-suika" onclick="setFlag(6, this)">氷A</div>
+    <div class="flag-btn f-suika" onclick="setFlag(7, this)">氷B</div>
+    <div class="flag-btn f-che" onclick="setFlag(8, this)">チェリーA1</div>
+    <div class="flag-btn f-che" onclick="setFlag(9, this)">チェリーA2</div>
+    <div class="flag-btn f-che" onclick="setFlag(10, this)">チェリーB</div>
+    <div class="flag-btn f-tok" onclick="setFlag(11, this)">特殊役A</div>
+    <div class="flag-btn f-tok" onclick="setFlag(12, this)">特殊役B</div>
+    <div class="flag-btn f-tok" onclick="setFlag(13, this)">特殊役C</div>
+    <div class="flag-btn f-tok" onclick="setFlag(14, this)">特殊役D</div>
+    <div class="flag-btn f-tok" onclick="setFlag(15, this)">特殊役E</div>
 </div>
 
-<footer><button class="exec-btn" onclick="execute()">解析実行</button></footer>
+<footer><button class="exec-btn" onclick="executeControl()">解析実行</button></footer>
 
 <script>
     const REEL_COUNT = 21;
-    // データセット（参照キーは下段位置）
+    // ハナビの一般的な配列（14番をBAR＝暖簾に修正）
+    // 配列の並び順: [1, 2, ..., 21] 
+    const REEL_LAYOUT = [
+        "三連ドン","七","氷","リプレイ","チェリー","氷","ドン","リプレイ","チェリー","氷","七","リプレイ","チェリー","暖簾","氷","リプレイ","チェリー","氷","ドン","リプレイ","チェリー"
+    ];
+
+    // --- ここから元の制御データ（改変厳禁） ---
     const DATA_SETS = {
-        'hazure': { 21:[1,2,1,1,2,3,2,2,4,4,4,0,0,0,0,0], 20:[0,0,2,0,3,4,0,0,1,1,1,0,0,0,0,0], 19:[0,1,3,1,4,4,0,0,2,2,2,0,0,0,0,0], 18:[1,1,0,1,0,0,2,2,3,3,3,0,0,0,0,0], 17:[0,0,1,0,0,1,1,1,4,4,4,0,0,0,0,0], 16:[2,1,2,1,1,2,3,3,0,0,0,0,0,0,0,0], 15:[3,2,3,2,2,3,3,3,1,1,1,0,0,0,0,0], 14:[3,3,1,3,3,4,4,4,0,0,2,0,0,0,0,0], 13:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0], 12:[1,0,3,0,0,1,1,1,2,2,4,0,0,0,0,0], 11:[0,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0], 10:[1,0,1,1,2,3,2,2,4,4,4,0,0,0,0,0], 9:[2,1,2,1,3,4,2,2,1,1,1,0,0,0,0,0], 8:[0,2,0,2,4,0,3,3,2,2,2,0,0,0,0,0], 7:[1,0,1,0,0,0,4,4,3,3,3,0,0,0,0,0], 6:[2,1,2,1,2,1,1,1,0,0,0,0,0,0,0,0], 5:[3,2,3,2,2,3,2,2,1,1,1,0,0,0,0,0], 4:[4,3,1,3,3,4,3,3,0,0,2,0,0,0,0,0], 3:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0], 2:[1,0,3,0,0,0,0,0,2,2,4,0,0,0,0,0], 1:[1,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0] },
-        'don': { 21:[3,2,1,2,2,2,3,3,4,4,4,3,1,1,3,3], 20:[4,0,2,0,3,4,4,4,1,1,1,4,0,2,4,4], 19:[0,1,0,1,4,4,0,0,2,2,2,4,0,0,2,0], 18:[1,1,1,1,0,0,2,2,3,3,3,1,1,1,2,1], 17:[0,0,1,0,0,1,1,1,4,4,4,1,2,2,4,0], 16:[2,1,3,1,1,1,3,3,0,0,0,1,3,2,3,2], 15:[2,2,3,2,2,3,3,3,1,1,1,4,3,4,3,2], 14:[3,3,4,3,3,4,4,4,0,0,2,4,4,4,3,3], 13:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0], 12:[1,0,0,0,0,1,1,1,2,2,4,1,1,1,1,1], 11:[0,1,1,1,1,1,0,0,3,3,3,0,0,0,0,0], 10:[1,0,2,0,3,2,1,1,4,4,4,1,1,1,0,1], 9:[1,1,4,1,4,4,2,2,1,1,1,2,2,1,2,1], 8:[1,2,0,2,0,0,3,3,2,2,2,3,2,1,1,1], 7:[1,0,1,0,0,0,4,4,3,3,1,4,2,3,4,3], 6:[1,1,2,1,1,1,1,1,0,0,0,2,4,3,3,3], 5:[3,2,2,2,3,2,2,2,1,1,1,2,4,4,4,4], 4:[3,3,4,3,3,3,3,3,0,0,0,4,4,3,4,3], 3:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0], 2:[1,0,1,0,0,0,1,1,2,2,2,1,1,1,1,1], 1:[2,1,0,1,1,1,2,2,3,3,3,2,0,0,2,2] },
-        'seven': { 21:[1,2,0,2,2,3,2,2,4,4,4,2,1,1,1,1], 20:[0,1,1,0,3,4,0,0,0,1,1,3,0,0,0,0], 19:[0,0,1,1,4,4,0,0,1,2,2,0,0,1,0,0], 18:[1,2,1,1,0,0,0,0,2,3,3,0,1,2,1,1], 17:[1,0,0,0,0,1,1,1,3,4,4,0,2,1,0,0], 16:[1,1,1,1,1,1,3,3,0,0,0,3,3,2,3,3], 15:[4,2,0,2,2,2,3,3,1,1,1,2,3,3,3,3], 14:[4,3,3,3,3,4,4,4,2,0,2,3,4,4,3,3], 13:[4,4,4,4,4,0,0,0,1,1,1,0,4,0,4,0], 12:[1,0,1,0,0,1,1,1,4,2,4,0,1,1,1,1], 11:[2,1,4,1,1,2,1,1,3,3,3,1,0,2,0,2], 10:[3,2,1,0,2,3,2,2,4,4,4,1,1,1,1,1], 9:[4,1,1,1,3,4,2,2,2,1,1,2,2,2,2,2], 8:[0,4,3,2,4,0,3,3,3,2,2,3,2,3,2,2], 7:[0,0,0,0,0,0,4,4,4,3,3,4,2,3,2,2], 6:[2,4,1,1,2,2,1,1,0,0,0,1,4,3,4,4], 5:[2,2,0,2,2,2,2,2,1,1,1,3,4,4,4,4], 4:[4,3,1,3,3,4,3,3,2,0,2,3,4,3,4,4], 3:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0], 2:[1,0,3,0,0,1,0,0,4,2,4,0,1,1,1,1], 1:[0,1,4,1,1,2,1,1,3,3,3,1,0,0,0,0] },
-        'reg': { 21:[1,2,2,2,2,3,2,2,4,4,4,1,1,1,1,1], 20:[0,1,0,0,3,4,0,0,1,1,1,0,0,0,2,0], 19:[0,0,1,1,4,4,0,0,2,2,2,0,1,1,0,0], 18:[1,2,1,1,0,0,0,0,3,3,3,0,2,2,1,1], 17:[0,0,0,0,0,1,1,1,4,4,4,1,1,1,0,0], 16:[3,1,1,1,1,1,3,3,0,0,0,2,2,2,2,3], 15:[3,2,2,2,2,2,3,3,1,1,1,3,3,3,2,3], 14:[3,3,3,3,3,4,4,4,0,0,0,4,4,4,3,3], 13:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0], 12:[1,0,0,0,0,1,1,1,2,2,2,1,1,1,1,1], 11:[2,1,1,1,1,2,2,2,3,3,3,2,0,2,0,0], 10:[3,2,0,0,2,3,3,3,4,4,4,3,1,1,1,1], 9:[4,1,1,1,3,4,4,4,4,4,4,4,2,2,1,2], 8:[2,4,2,2,4,0,3,3,2,2,2,3,3,3,1,3], 7:[2,0,0,0,0,0,4,4,3,3,1,4,3,3,3,4], 6:[2,4,1,1,2,2,1,1,0,0,0,3,3,3,3,4], 5:[2,2,2,2,2,2,2,2,1,1,1,4,4,4,4,4], 4:[4,3,3,3,3,4,3,3,0,0,2,3,3,3,3,4], 3:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0], 2:[1,0,0,0,0,1,0,0,2,2,4,1,1,1,1,1], 1:[0,1,1,1,1,2,1,1,3,3,3,0,0,0,0,0] }
+        'hazure': {21:[1,2,1,1,2,3,2,2,4,4,4,0,0,0,0,0],20:[0,0,2,0,3,4,0,0,1,1,1,0,0,0,0,0],19:[0,1,3,1,4,4,0,0,2,2,2,0,0,0,0,0],18:[1,1,0,1,0,0,2,2,3,3,3,0,0,0,0,0],17:[0,0,1,0,0,1,1,1,4,4,4,0,0,0,0,0],16:[2,1,2,1,1,2,3,3,0,0,0,0,0,0,0,0],15:[3,2,3,2,2,3,3,3,1,1,1,0,0,0,0,0],14:[3,3,1,3,3,4,4,4,0,0,2,0,0,0,0,0],13:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0],12:[1,0,3,0,0,1,1,1,2,2,4,0,0,0,0,0],11:[0,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0],10:[1,0,1,1,2,3,2,2,4,4,4,0,0,0,0,0],9:[2,1,2,1,3,4,2,2,1,1,1,0,0,0,0,0],8:[0,2,0,2,4,0,3,3,2,2,2,0,0,0,0,0],7:[1,0,1,0,0,0,4,4,3,3,3,0,0,0,0,0],6:[2,1,2,1,2,1,1,1,0,0,0,0,0,0,0,0],5:[3,2,3,2,2,3,2,2,1,1,1,0,0,0,0,0],4:[4,3,1,3,3,4,3,3,0,0,2,0,0,0,0,0],3:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0],2:[1,0,3,0,0,0,0,0,2,2,4,0,0,0,0,0],1:[1,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0]},
+        'don': {21:[3,2,1,2,2,2,3,3,4,4,4,3,1,1,3,3],20:[4,0,2,0,3,4,4,4,1,1,1,4,0,2,4,4],19:[0,1,0,1,4,4,0,0,2,2,2,4,0,0,2,0],18:[1,1,1,1,0,0,2,2,3,3,3,1,1,1,2,1],17:[0,0,1,0,0,1,1,1,4,4,4,1,2,2,4,0],16:[2,1,3,1,1,1,3,3,0,0,0,1,3,2,3,2],15:[2,2,3,2,2,3,3,3,1,1,1,4,3,4,3,2],14:[3,3,4,3,3,4,4,4,0,0,2,4,4,4,3,3],13:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0],12:[1,0,0,0,0,1,1,1,2,2,4,1,1,1,1,1],11:[0,1,1,1,1,1,0,0,3,3,3,0,0,0,0,0],10:[1,0,2,0,3,2,1,1,4,4,4,1,1,1,0,1],9:[1,1,4,1,4,4,2,2,1,1,1,2,2,1,2,1],8:[1,2,0,2,0,0,3,3,2,2,2,3,2,1,1,1],7:[1,0,1,0,0,0,4,4,3,3,1,4,2,3,4,3],6:[1,1,2,1,1,1,1,1,0,0,0,2,4,3,3,3],5:[3,2,2,2,3,2,2,2,1,1,1,2,4,4,4,4],4:[3,3,4,3,3,3,3,3,0,0,0,4,4,3,4,3],3:[0,4,0,4,0,4,0,0,1,1,1,0,0,0,0,0],2:[1,0,1,0,0,0,1,1,2,2,2,1,1,1,1,1],1:[2,1,0,1,1,1,2,2,3,3,3,2,0,0,2,2]},
+        'seven': {21:[1,2,0,2,2,3,2,2,4,4,4,2,1,1,1,1],20:[0,1,1,0,3,4,0,0,0,1,1,3,0,0,0,0],19:[0,0,1,1,4,4,0,0,1,2,2,0,0,1,0,0],18:[1,2,1,1,0,0,0,0,2,3,3,0,1,2,1,1],17:[1,0,0,0,0,1,1,1,3,4,4,0,2,1,0,0],16:[1,1,1,1,1,1,3,3,0,0,0,3,3,2,3,3],15:[4,2,0,2,2,2,3,3,1,1,1,2,3,3,3,3],14:[4,3,3,3,3,4,4,4,2,0,2,3,4,4,3,3],13:[4,4,4,4,4,0,0,0,1,1,1,0,4,0,4,0],12:[1,0,1,0,0,1,1,1,4,2,4,0,1,1,1,1],11:[2,1,4,1,1,2,1,1,3,3,3,1,0,2,0,2],10:[3,2,1,0,2,3,2,2,4,4,4,1,1,1,1,1],9:[4,1,1,1,3,4,2,2,2,1,1,2,2,2,2,2],8:[0,4,3,2,4,0,3,3,3,2,2,3,2,3,2,2],7:[0,0,0,0,0,0,4,4,4,3,3,4,2,3,2,2],6:[2,4,1,1,2,2,1,1,0,0,0,1,4,3,4,4],5:[2,2,0,2,2,2,2,2,1,1,1,3,4,4,4,4],4:[4,3,1,3,3,4,3,3,2,0,2,3,4,3,4,4],3:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0],2:[1,0,3,0,0,1,0,0,4,2,4,0,1,1,1,1],1:[0,1,4,1,1,2,1,1,3,3,3,1,0,0,0,0]},
+        'reg': {21:[1,2,2,2,2,3,2,2,4,4,4,1,1,1,1,1],20:[0,1,0,0,3,4,0,0,1,1,1,0,0,0,2,0],19:[0,0,1,1,4,4,0,0,2,2,2,0,1,1,0,0],18:[1,2,1,1,0,0,0,0,3,3,3,0,2,2,1,1],17:[0,0,0,0,0,1,1,1,4,4,4,1,1,1,0,0],16:[3,1,1,1,1,1,3,3,0,0,0,2,2,2,2,3],15:[3,2,2,2,2,2,3,3,1,1,1,3,3,3,2,3],14:[3,3,3,3,3,4,4,4,0,0,0,4,4,4,3,3],13:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0],12:[1,0,0,0,0,1,1,1,2,2,2,1,1,1,1,1],11:[2,1,1,1,1,2,2,2,3,3,3,2,0,2,0,0],10:[3,2,0,0,2,3,3,3,4,4,4,3,1,1,1,1],9:[4,1,1,1,3,4,4,4,4,4,4,4,2,2,1,2],8:[2,4,2,2,4,0,3,3,2,2,2,3,3,3,1,3],7:[2,0,0,0,0,0,4,4,3,3,1,4,3,3,3,4],6:[2,4,1,1,2,2,1,1,0,0,0,3,3,3,3,4],5:[2,2,2,2,2,2,2,2,1,1,1,4,4,4,4,4],4:[4,3,3,3,3,4,3,3,0,0,2,3,3,3,3,4],3:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0],2:[1,0,0,0,0,1,0,0,2,2,4,1,1,1,1,1],1:[0,1,1,1,1,2,1,1,3,3,3,0,0,0,0,0]}
     };
 
-    let selectedState = 'hazure';
+    let currentState = 'hazure';
     let selectedFlagIdx = 0;
-    let selectedTopIdx = 1; // 上段のインデックス
+    let selectedTopIdx = 1; // 上端のインデックス
     let SH = 0;
 
-    function setState(id) {
-        document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('st-' + id).classList.add('active');
-        selectedState = id;
-        updateFlagUI();
-    }
-
-    function updateFlagUI() {
-        const isHazure = (selectedState === 'hazure');
-        const tokKeys = ['tok_a','tok_b','tok_c','tok_d','tok_e'];
-        tokKeys.forEach(k => {
-            const btn = document.getElementById('f-' + k);
-            btn.classList.toggle('disabled', isHazure);
-            if(isHazure && btn.classList.contains('active')) setFlag('hazure', 0);
-        });
-    }
-
-    function setFlag(id, idx) {
-        document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('f-' + id).classList.add('active');
-        selectedFlagIdx = idx;
-    }
-
-    function execute() {
-        // 事実：上段が9のとき、7番を参照する
-        let refIdx = selectedTopIdx - 2;
-        while (refIdx < 1) refIdx += REEL_COUNT;
-
-        // 滑りコマ数取得
-        const slip = DATA_SETS[selectedState][refIdx][selectedFlagIdx];
-        
-        // 停止位置：大きい方へ滑る（順回転）
-        let stopTopIdx = selectedTopIdx + slip;
-        while (stopTopIdx > REEL_COUNT) stopTopIdx -= REEL_COUNT;
-
-        document.getElementById('val-slip').innerText = slip;
-        document.getElementById('val-pos').innerText = stopTopIdx;
-        
-        const outStrip = document.getElementById('strip-out');
-        outStrip.style.transition = 'transform 0.15s ease-out';
-        // 描画：番号が大きくなる方向（上へスライド）へ移動
-        outStrip.style.transform = `translateY(${-(REEL_COUNT + stopTopIdx - 3) * SH}px)`;
-    }
-
-    function createStrips() {
+    function init() {
         const area = document.getElementById('touch-area');
         SH = area.offsetHeight / 7;
         ['strip-in', 'strip-out'].forEach(id => {
             const el = document.getElementById(id);
-            el.innerHTML = '';
+            // 3周分描画してループを表現
             for(let i=0; i<63; i++) {
-                const symIdx = (i % REEL_COUNT) + 1;
+                const idx = (i % REEL_COUNT) + 1;
                 const d = document.createElement('div');
-                d.className = 'symbol';
-                d.style.height = SH + 'px';
-                d.style.backgroundPosition = `0 ${(symIdx - 1) * 5}%`;
+                d.className = 'symbol'; d.style.height = SH + 'px';
+                d.innerHTML = `<div class="symbol-image" style="background-position:0 ${(idx-1)*5}%"></div>`;
                 el.appendChild(d);
             }
         });
@@ -174,38 +142,57 @@
     function updateInReel(animate = true) {
         const strip = document.getElementById('strip-in');
         strip.style.transition = animate ? 'transform 0.1s ease-out' : 'none';
-        // インデックスと表示を厳密に同期
-        strip.style.transform = `translateY(${-(REEL_COUNT + selectedTopIdx - 3) * SH}px)`;
-        document.getElementById('val-target').innerText = selectedTopIdx;
+        strip.style.transform = `translateY(${-(REEL_COUNT + selectedTopIdx - 1) * SH}px)`;
+        // 中段(Top+2)を表示（表示用）
+        let midIdx = selectedTopIdx + 2;
+        while(midIdx > REEL_COUNT) midIdx -= REEL_COUNT;
+        document.getElementById('val-input').innerText = midIdx;
     }
 
+    function setState(id) {
+        document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('st-' + id).classList.add('active');
+        currentState = id;
+    }
+
+    function setFlag(idx, btn) {
+        document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedFlagIdx = idx;
+    }
+
+    function executeControl() {
+        let midIdx = selectedTopIdx + 2;
+        while(midIdx > REEL_COUNT) midIdx -= REEL_COUNT;
+        
+        const slip = DATA_SETS[currentState][midIdx][selectedFlagIdx];
+        let stopMidIdx = midIdx + slip;
+        while(stopMidIdx > REEL_COUNT) stopMidIdx -= REEL_COUNT;
+
+        document.getElementById('val-slip').innerText = slip;
+        document.getElementById('val-result').innerText = stopMidIdx;
+
+        const stripOut = document.getElementById('strip-out');
+        const outTopIdx = stopMidIdx - 2;
+        stripOut.style.transition = 'transform 0.3s ease-out';
+        stripOut.style.transform = `translateY(${-(REEL_COUNT + outTopIdx - 1) * SH}px)`;
+    }
+
+    // フリックイベント
     const touchArea = document.getElementById('touch-area');
     let startY = 0, startIdx = 0;
-
-    touchArea.addEventListener('touchstart', e => {
-        startY = e.touches[0].pageY;
-        startIdx = selectedTopIdx;
-    });
-
+    touchArea.addEventListener('touchstart', e => { startY = e.touches[0].pageY; startIdx = selectedTopIdx; });
     touchArea.addEventListener('touchmove', e => {
         e.preventDefault();
-        let diff = e.touches[0].pageY - startY;
-        let moveCount = Math.round(diff / SH);
+        let moveCount = Math.round((e.touches[0].pageY - startY) / SH);
         let newIdx = startIdx - moveCount;
         while(newIdx < 1) newIdx += REEL_COUNT;
         while(newIdx > REEL_COUNT) newIdx -= REEL_COUNT;
-        
-        if(newIdx !== selectedTopIdx) {
-            selectedTopIdx = newIdx;
-            updateInReel(false);
-        }
+        if(newIdx !== selectedTopIdx) { selectedTopIdx = newIdx; updateInReel(false); }
     });
+    touchArea.addEventListener('touchend', () => { updateInReel(true); });
 
-    touchArea.addEventListener('touchend', () => {
-        updateInReel(true);
-    });
-
-    window.onload = () => { createStrips(); updateFlagUI(); };
+    window.onload = init;
 </script>
 </body>
 </html>
