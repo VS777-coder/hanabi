@@ -134,8 +134,8 @@
     const SH = 50; 
     let currentState = 'hazure';
     let selectedFlagIdx = 0;
-    // 初期表示：現状のまま14番をselectedTopIdxとして保持
-    let selectedTopIdx = 14;
+    // 初期表示をストップ位置（中段）14にするために topIdxを13に設定
+    let selectedTopIdx = 13;
 
     const DATA_SETS = {
         'hazure': {21:[1,2,1,1,2,3,2,2,4,4,4,0,0,0,0,0],20:[0,0,2,0,3,4,0,0,1,1,1,0,0,0,0,0],19:[0,1,3,1,4,4,0,0,2,2,2,0,0,0,0,0],18:[1,1,0,1,0,0,2,2,3,3,3,0,0,0,0,0],17:[0,0,1,0,0,1,1,1,4,4,4,0,0,0,0,0],16:[2,1,2,1,1,2,3,3,0,0,0,0,0,0,0,0],15:[3,2,3,2,2,3,3,3,1,1,1,0,0,0,0,0],14:[3,3,1,3,3,4,4,4,0,0,2,0,0,0,0,0],13:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0],12:[1,0,3,0,0,1,1,1,2,2,4,0,0,0,0,0],11:[0,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0],10:[1,0,1,1,2,3,2,2,4,4,4,0,0,0,0,0],9:[2,1,2,1,3,4,2,2,1,1,1,0,0,0,0,0],8:[0,2,0,2,4,0,3,3,2,2,2,0,0,0,0,0],7:[1,0,1,0,0,0,4,4,3,3,3,0,0,0,0,0],6:[2,1,2,1,2,1,1,1,0,0,0,0,0,0,0,0],5:[3,2,3,2,2,3,2,2,1,1,1,0,0,0,0,0],4:[4,3,1,3,3,4,3,3,0,0,2,0,0,0,0,0],3:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0],2:[1,0,3,0,0,0,0,0,2,2,4,0,0,0,0,0],1:[1,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0]},
@@ -148,7 +148,6 @@
         ['strip-in', 'strip-out'].forEach(id => {
             const el = document.getElementById(id);
             el.innerHTML = '';
-            // 画像の並びが1→21なら、表示順もそれに合わせる
             for(let i=0; i<63; i++) {
                 const idx = (i % REEL_COUNT) + 1;
                 const d = document.createElement('div');
@@ -164,7 +163,6 @@
     function updateInReel(animate = true) {
         const strip = document.getElementById('strip-in');
         strip.style.transition = animate ? 'transform 0.1s ease-out' : 'none';
-        // インデックスと表示位置を同期
         strip.style.transform = `translateY(${-(REEL_COUNT + selectedTopIdx - 1) * SH}px)`;
         let midIdx = selectedTopIdx + 1; 
         if(midIdx > REEL_COUNT) midIdx -= REEL_COUNT;
@@ -201,9 +199,8 @@
         if(midIdx > REEL_COUNT) midIdx -= REEL_COUNT;
         const slip = DATA_SETS[currentState][midIdx][selectedFlagIdx];
         
-        // 滑り方向をマイナス（インデックスが減る方向＝送り方向）に修正
-        let stopMidIdx = midIdx - slip;
-        while(stopMidIdx < 1) stopMidIdx += REEL_COUNT;
+        let stopMidIdx = midIdx + slip;
+        while(stopMidIdx > REEL_COUNT) stopMidIdx -= REEL_COUNT;
 
         document.getElementById('val-slip').innerText = slip;
         document.getElementById('val-result').innerText = stopMidIdx;
@@ -223,9 +220,8 @@
     
     touchArea.addEventListener('touchmove', e => {
         e.preventDefault();
-        // スワイプによるインデックス増減を反転（下スワイプでインデックス増＝リールが上に戻る動きに対応）
         let moveCount = Math.round((e.touches[0].pageY - startY) / SH);
-        let newIdx = startIdx + moveCount; // ここをプラスに変更
+        let newIdx = startIdx - moveCount;
         while(newIdx < 1) newIdx += REEL_COUNT;
         while(newIdx > REEL_COUNT) newIdx -= REEL_COUNT;
         if(newIdx !== selectedTopIdx) { 
