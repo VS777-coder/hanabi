@@ -3,91 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hanabi Analyzer - 3Reel Full Support</title>
+    <title>Hanabi Precision Auditor - Mobile Optimized</title>
     <style>
-        /* 完動版.html のUI/CSSを完全継承 */
         :root {
             --sH: 60px; --blue: #00bbff; --red: #ff3333;
             --rep: #0080ff; --bell: #eebb00; --suika: #00bb00; --cherry: #ff0000; --tok: #aa00ff;
+            --btn-bg: #1a1a1a; --active-glow: 0 0 12px rgba(0, 255, 0, 0.6);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; user-select: none; }
         body { background: #000; color: #fff; font-family: sans-serif; height: 100svh; overflow: hidden; display: flex; flex-direction: column; position: fixed; width: 100%; }
         
-        .reel-header { display: flex; gap: 4px; padding: 4px; background: #222; flex-shrink: 0; }
-        .reel-btn { flex: 1; height: 36px; border-radius: 4px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #444; background: #111; color: #888; cursor: pointer; }
-        .reel-btn.active#rb-left { background: #600010; color: #ffb7ce; border-color: #ff80ab; }
-        .reel-btn.active#rb-middle { background: #001040; color: #b3e5fc; border-color: #80d8ff; }
-        .reel-btn.active#rb-right { background: #002005; color: #c8e6c9; border-color: #69f0ae; }
+        /* 操作系の一体化グリッド */
+        .controls-wrapper { display: flex; flex-direction: column; gap: 4px; padding: 6px; background: #111; flex-shrink: 0; border-bottom: 1px solid #333; }
+        .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        
+        .unit-btn { height: 40px; border-radius: 4px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #444; background: var(--btn-bg); color: #fff; text-align: center; cursor: pointer; transition: 0.1s; }
+        .unit-btn.active { border-color: #0f0; box-shadow: var(--active-glow); background: #222; }
 
-        .state-header { display: flex; gap: 8px; padding: 8px; background: #111; flex-shrink: 0; border-top: 1px solid #333; }
-        .state-btn { flex: 1; height: 52px; border-radius: 6px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #444; text-align: center; color: #fff; cursor: pointer; }
-        .state-btn.active { border-color: #0f0; box-shadow: 0 0 10px #0f0; }
+        /* メインワークスペース */
+        main { flex: 1; display: flex; align-items: stretch; padding: 4px; gap: 4px; overflow: hidden; }
+        
+        /* 16役ボタンのスマート集約（リール横） */
+        .flag-side-panel { width: 75px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; align-content: start; overflow-y: auto; padding-right: 2px; }
+        .flag-mini-btn { height: 38px; border-radius: 3px; font-size: 8.5px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #222; color: #fff; text-shadow: 1px 1px 1px #000; cursor: pointer; text-align: center; line-height: 1.1; }
+        .flag-mini-btn.active { border: 1.5px solid #fff; box-shadow: 0 0 6px #fff; z-index: 10; }
+        .flag-mini-btn.disabled { opacity: 0.15; filter: grayscale(1); pointer-events: none; }
 
-        main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; overflow: hidden; }
-        .reel-container { position: relative; width: 110px; height: calc(var(--sH) * 7); background: #111; border: 1px solid #333; }
+        .reel-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; position: relative; }
+        .reel-container { position: relative; width: 110px; height: calc(var(--sH) * 5); background: #111; border: 1px solid #333; border-radius: 4px; overflow: hidden; }
         .win { width: 100%; height: 100%; overflow-y: scroll; scrollbar-width: none; scroll-snap-type: y mandatory; }
         .win::-webkit-scrollbar { display: none; }
         #winR { overflow-y: hidden; scroll-snap-type: none; } 
-        .strip .symbol { scroll-snap-align: start; }
-        .frame { position: absolute; top: calc(var(--sH) * 2); left: 0; width: 100%; height: calc(var(--sH) * 3); z-index: 999; pointer-events: none; border: 6px solid var(--blue); }
+        
+        .frame { position: absolute; top: calc(var(--sH) * 1); left: 0; width: 100%; height: calc(var(--sH) * 3); z-index: 999; pointer-events: none; border: 4px solid var(--blue); }
         .frame.red { border-color: var(--red); }
         .strip { width: 100%; display: flex; flex-direction: column; }
-        .symbol { width: 100%; height: var(--sH); flex-shrink: 0; background-size: 100% 2100%; background-repeat: no-repeat; }
+        .symbol { width: 100%; height: var(--sH); flex-shrink: 0; background-size: 100% 2100%; background-repeat: no-repeat; border-bottom: 1px solid rgba(255,255,255,0.05); }
         
-        .center { display: flex; flex-direction: column; justify-content: center; gap: 12px; width: 95px; text-align: center; }
-        .info-box { background: #111; border: 1px solid #333; padding: 6px; border-radius: 4px; }
-        .info-label { font-size: 9px; color: #888; margin-bottom: 2px; }
-        .info-val { font-size: 16px; font-weight: bold; }
-        #val-slip { font-size: 32px; color: #ffff00; }
+        /* 情報表示のタイト化 */
+        .info-row { display: flex; width: 100%; max-width: 280px; gap: 4px; }
+        .info-box { flex: 1; background: #111; border: 1px solid #333; padding: 4px; border-radius: 4px; text-align: center; }
+        .info-label { font-size: 8px; color: #888; }
+        .info-val { font-size: 13px; font-weight: bold; }
+        #val-slip { font-size: 24px; color: #ffff00; line-height: 1; }
 
-        .flag-grid { padding: 8px; background: #111; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex-shrink: 0; }
-        .flag-btn { height: 44px; border-radius: 6px; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid #222; color: #fff; text-shadow: 1px 1px 1px #000; cursor: pointer; }
-        .flag-btn.active { border: 2px solid #fff; box-shadow: 0 0 8px #fff; }
-        .flag-btn.disabled { opacity: 0.2; pointer-events: none; filter: grayscale(1); }
-
-        footer { padding: 12px; background: #000; }
-        .exec-btn { width: 100%; height: 54px; background: linear-gradient(#f44, #800); border-radius: 10px; color: #fff; font-size: 20px; font-weight: bold; border: 2px solid #f99; }
+        footer { padding: 8px; background: #000; }
+        .exec-btn { width: 100%; height: 50px; background: linear-gradient(#f44, #800); border-radius: 8px; color: #fff; font-size: 18px; font-weight: bold; border: 2px solid #f99; box-shadow: 0 4px 0 #600; }
+        .exec-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #600; }
     </style>
 </head>
 <body>
-<header class="reel-header">
-    <div id="rb-left" class="reel-btn active" onclick="setReel('left')">左リール</div>
-    <div id="rb-middle" class="reel-btn" onclick="setReel('middle')">中リール</div>
-    <div id="rb-right" class="reel-btn" onclick="setReel('right')">右リール</div>
-</header>
-<header class="state-header">
-    <div id="st-hazure" class="state-btn active" style="background:#333" onclick="setState('hazure')">ボーナス<br>未成立</div>
-    <div id="st-don" class="state-btn" style="background:#0040ff" onclick="setState('don')">ドンＢＩＧ<br>成立</div>
-    <div id="st-seven" class="state-btn" style="background:#ff0000" onclick="setState('seven')">七ＢＩＧ<br>成立</div>
-    <div id="st-reg" class="state-btn" style="background:#222" onclick="setState('reg')">ＲＥＧ<br>成立</div>
-</header>
-<main>
-    <div class="reel-container"><div class="frame"></div><div class="win" id="winL"><div id="stripL" class="strip"></div></div></div>
-    <div class="center">
-        <div class="info-box"><div class="info-label">ストップ位置</div><div id="val-mid" class="info-val">--</div></div>
-        <div class="info-box"><div class="info-label">滑り</div><div id="val-slip">--</div></div>
-        <div class="info-box"><div class="info-label">最終停止位置</div><div id="val-res" class="info-val">--</div></div>
+
+<div class="controls-wrapper">
+    <div class="btn-grid">
+        <div id="rb-left" class="unit-btn active" onclick="setReel('left')">左リール</div>
+        <div id="rb-middle" class="unit-btn" onclick="setReel('middle')">中リール</div>
+        <div id="rb-right" class="unit-btn" onclick="setReel('right')">右リール</div>
+        <div style="visibility:hidden"></div>
     </div>
-    <div class="reel-container"><div class="frame red"></div><div class="win" id="winR"><div id="stripR" class="strip"></div></div></div>
-</main>
-<div id="flag-container" class="flag-grid">
-    <div id="flg-0" class="flag-btn active" onclick="setFlag(0, this)" style="background:#444">ハズレ</div>
-    <div id="flg-1" class="flag-btn" onclick="setFlag(1, this)" style="background:var(--rep)">リプレイ</div>
-    <div id="flg-2" class="flag-btn" onclick="setFlag(2, this)" style="background:var(--rep)">JACリプ</div>
-    <div id="flg-3" class="flag-btn" onclick="setFlag(3, this)" style="background:var(--rep)">RTリプ</div>
-    <div id="flg-4" class="flag-btn" onclick="setFlag(4, this)" style="background:var(--bell)">ベルＡ</div>
-    <div id="flg-5" class="flag-btn" onclick="setFlag(5, this)" style="background:var(--bell)">ベルＢ</div>
-    <div id="flg-6" class="flag-btn" onclick="setFlag(6, this)" style="background:var(--suika)">氷Ａ</div>
-    <div id="flg-7" class="flag-btn" onclick="setFlag(7, this)" style="background:var(--suika)">氷Ｂ</div>
-    <div id="flg-8" class="flag-btn" onclick="setFlag(8, this)" style="background:var(--cherry)">チェＡ1</div>
-    <div id="flg-9" class="flag-btn" onclick="setFlag(9, this)" style="background:var(--cherry)">チェＡ2</div>
-    <div id="flg-10" class="flag-btn" onclick="setFlag(10, this)" style="background:var(--cherry)">チェＢ</div>
-    <div id="flg-11" class="flag-btn is-tok" onclick="setFlag(11, this)" style="background:var(--tok)">特殊役Ａ</div>
-    <div id="flg-12" class="flag-btn is-tok" onclick="setFlag(12, this)" style="background:var(--tok)">特殊役Ｂ</div>
-    <div id="flg-13" class="flag-btn is-tok" onclick="setFlag(13, this)" style="background:var(--tok)">特殊役Ｃ</div>
-    <div id="flg-14" class="flag-btn is-tok" onclick="setFlag(14, this)" style="background:var(--tok)">特殊役Ｄ</div>
-    <div id="flg-15" class="flag-btn is-tok" onclick="setFlag(15, this)" style="background:var(--tok)">特殊役Ｅ</div>
+    <div class="btn-grid">
+        <div id="st-hazure" class="unit-btn active" onclick="setState('hazure')">未成立</div>
+        <div id="st-don" class="unit-btn" style="color:#00bbff" onclick="setState('don')">ドン成立</div>
+        <div id="st-seven" class="unit-btn" style="color:#ff3333" onclick="setState('seven')">七成立</div>
+        <div id="st-reg" class="unit-btn" style="color:#aaa" onclick="setState('reg')">REG成立</div>
+    </div>
 </div>
+
+<main>
+    <div id="flag-container" class="flag-side-panel">
+        <div id="flg-0" class="flag-mini-btn active" onclick="setFlag(0, this)" style="background:#444">ハズレ</div>
+        <div id="flg-1" class="flag-mini-btn" onclick="setFlag(1, this)" style="background:var(--rep)">リプ</div>
+        <div id="flg-2" class="flag-mini-btn" onclick="setFlag(2, this)" style="background:var(--rep)">JAC</div>
+        <div id="flg-3" class="flag-mini-btn" onclick="setFlag(3, this)" style="background:var(--rep)">RT</div>
+        <div id="flg-4" class="flag-mini-btn" onclick="setFlag(4, this)" style="background:var(--bell)">ベルA</div>
+        <div id="flg-5" class="flag-mini-btn" onclick="setFlag(5, this)" style="background:var(--bell)">ベルB</div>
+        <div id="flg-6" class="flag-mini-btn" onclick="setFlag(6, this)" style="background:var(--suika)">氷A</div>
+        <div id="flg-7" class="flag-mini-btn" onclick="setFlag(7, this)" style="background:var(--suika)">氷B</div>
+        <div id="flg-8" class="flag-mini-btn" onclick="setFlag(8, this)" style="background:var(--cherry)">チェA1</div>
+        <div id="flg-9" class="flag-mini-btn" onclick="setFlag(9, this)" style="background:var(--cherry)">チェA2</div>
+        <div id="flg-10" class="flag-mini-btn" onclick="setFlag(10, this)" style="background:var(--cherry)">チェB</div>
+        <div id="flg-11" class="flag-mini-btn is-tok" onclick="setFlag(11, this)" style="background:var(--tok)">特A</div>
+        <div id="flg-12" class="flag-mini-btn is-tok" onclick="setFlag(12, this)" style="background:var(--tok)">特B</div>
+        <div id="flg-13" class="flag-mini-btn is-tok" onclick="setFlag(13, this)" style="background:var(--tok)">特C</div>
+        <div id="flg-14" class="flag-mini-btn is-tok" onclick="setFlag(14, this)" style="background:var(--tok)">特D</div>
+        <div id="flg-15" class="flag-mini-btn is-tok" onclick="setFlag(15, this)" style="background:var(--tok)">特E</div>
+    </div>
+
+    <div class="reel-area">
+        <div class="info-row">
+            <div class="info-box"><div class="info-label">押下</div><div id="val-mid" class="info-val">--</div></div>
+            <div class="info-box"><div class="info-label">滑り</div><div id="val-slip">--</div></div>
+            <div class="info-box"><div class="info-label">最終</div><div id="val-res" class="info-val">--</div></div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <div class="reel-container"><div class="frame"></div><div class="win" id="winL"><div id="stripL" class="strip"></div></div></div>
+            <div class="reel-container"><div class="frame red"></div><div class="win" id="winR"><div id="stripR" class="strip"></div></div></div>
+        </div>
+    </div>
+</main>
+
 <footer><button class="exec-btn" onclick="executeControl()">解析実行</button></footer>
 
 <script>
@@ -98,7 +112,7 @@
     let selectedFlagIdx = 0;
     const reelArray = [21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1];
 
-    // 新ハナビ全DNAデータの多層構造化
+    // 新ハナビDNAデータ定義
     const GOD_DATA = {
         left: {
             hazure: { 21:[1,2,1,1,2,3,2,2,4,4,4,0,0,0,0,0], 20:[0,0,2,0,3,4,0,0,1,1,1,0,0,0,0,0], 19:[0,1,3,1,4,4,0,0,2,2,2,0,0,0,0,0], 18:[1,1,0,1,0,0,2,2,3,3,3,0,0,0,0,0], 17:[0,0,1,0,0,1,1,1,4,4,4,0,0,0,0,0], 16:[2,1,2,1,1,2,3,3,0,0,0,0,0,0,0,0], 15:[3,2,3,2,2,3,3,3,1,1,1,0,0,0,0,0], 14:[3,3,1,3,3,4,4,4,0,0,2,0,0,0,0,0], 13:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0], 12:[1,0,3,0,0,1,1,1,2,2,4,0,0,0,0,0], 11:[0,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0], 10:[1,0,1,1,2,3,2,2,4,4,4,0,0,0,0,0], 9:[2,1,2,1,3,4,2,2,1,1,1,0,0,0,0,0], 8:[0,2,0,2,4,0,3,3,2,2,2,0,0,0,0,0], 7:[1,0,1,0,0,0,4,4,3,3,3,0,0,0,0,0], 6:[2,1,2,1,2,1,1,1,0,0,0,0,0,0,0,0], 5:[3,2,3,2,2,3,2,2,1,1,1,0,0,0,0,0], 4:[4,3,1,3,3,4,3,3,0,0,2,0,0,0,0,0], 3:[0,4,2,4,4,4,0,0,1,1,1,0,0,0,0,0], 2:[1,0,3,0,0,0,0,0,2,2,4,0,0,0,0,0], 1:[1,1,0,0,1,2,1,1,3,3,3,0,0,0,0,0] },
@@ -106,18 +120,8 @@
             seven: { 21:[1,2,0,2,2,3,2,2,4,4,4,2,1,1,1,1], 20:[0,1,1,0,3,4,0,0,0,1,1,3,0,0,0,0], 19:[0,0,1,1,4,4,0,0,1,2,2,0,0,1,0,0], 18:[1,2,1,1,0,0,0,0,2,3,3,0,1,2,1,1], 17:[1,0,0,0,0,1,1,1,3,4,4,0,2,1,0,0], 16:[1,1,1,1,1,1,3,3,0,0,0,3,3,2,3,3], 15:[4,2,0,2,2,2,3,3,1,1,1,2,3,3,3,3], 14:[4,3,3,3,3,4,4,4,2,0,2,3,4,4,3,3], 13:[4,4,4,4,4,0,0,0,1,1,1,0,4,0,4,0], 12:[1,0,1,0,0,1,1,1,4,2,4,0,1,1,1,1], 11:[2,1,4,1,1,2,1,1,3,3,3,1,0,2,0,2], 10:[3,2,1,0,2,3,2,2,4,4,4,1,1,1,1,1], 9:[4,1,1,1,3,4,2,2,2,1,1,2,2,2,2,2], 8:[0,4,3,2,4,0,3,3,3,2,2,3,2,3,2,2], 7:[0,0,0,0,0,0,4,4,4,3,3,4,2,3,2,2], 6:[2,4,1,1,2,2,1,1,0,0,0,1,4,3,4,4], 5:[2,2,0,2,2,2,2,2,1,1,1,3,4,4,4,4], 4:[4,3,1,3,3,4,3,3,2,0,2,3,4,3,4,4], 3:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0], 2:[1,0,3,0,0,1,0,0,4,2,4,0,1,1,1,1], 1:[0,1,4,1,1,2,1,1,3,3,3,1,0,0,0,0] },
             reg: { 21:[1,2,2,2,2,3,2,2,4,4,4,1,1,1,1,1], 20:[0,1,0,0,3,4,0,0,1,1,1,0,0,0,2,0], 19:[0,0,1,1,4,4,0,0,2,2,2,0,1,1,0,0], 18:[1,2,1,1,0,0,0,0,3,3,3,0,2,2,1,1], 17:[0,0,0,0,0,1,1,1,4,4,4,1,1,1,0,0], 16:[3,1,1,1,1,1,3,3,0,0,0,2,2,2,2,3], 15:[3,2,2,2,2,2,3,3,1,1,1,3,3,3,2,3], 14:[3,3,3,3,3,4,4,4,0,0,0,4,4,4,3,3], 13:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0], 12:[1,0,0,0,0,1,1,1,2,2,2,1,1,1,1,1], 11:[2,1,1,1,1,2,2,2,3,3,3,2,0,2,0,0], 10:[3,2,0,0,2,3,3,3,4,4,4,3,1,1,1,1], 9:[4,1,1,1,3,4,4,4,4,4,4,4,2,2,1,2], 8:[2,4,2,2,4,0,3,3,2,2,2,3,3,3,1,3], 7:[2,0,0,0,0,0,4,4,3,3,1,4,3,3,3,4], 6:[2,4,1,1,2,2,1,1,0,0,0,3,3,3,3,4], 5:[2,2,2,2,2,2,2,2,1,1,1,4,4,4,4,4], 4:[4,3,3,3,3,4,3,3,0,0,2,3,3,3,3,4], 3:[0,4,4,4,4,0,0,0,1,1,1,0,0,0,0,0], 2:[1,0,0,0,0,1,0,0,2,2,4,1,1,1,1,1], 1:[0,1,1,1,1,2,1,1,3,3,3,0,0,0,0,0] }
         },
-        middle: {
-            hazure: { 21:[4,1,1,1,0,0,2,2,4,4,4,0,0,0,0,0], 20:[0,2,2,2,1,1,3,3,0,0,0,0,0,0,0,0], 19:[1,0,0,0,2,2,4,4,1,1,1,0,0,0,0,0], 18:[2,1,1,1,0,0,2,2,2,2,2,0,0,0,0,0], 17:[0,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0], 16:[1,3,3,3,2,2,0,0,1,1,1,0,0,0,0,0], 15:[0,4,4,4,3,3,0,0,0,0,0,0,0,0,0,0], 14:[1,0,0,0,4,4,2,2,1,1,1,0,0,0,0,0], 13:[2,1,1,1,0,0,2,2,2,2,2,0,0,0,0,0], 12:[3,2,2,2,1,1,4,4,3,3,3,0,0,0,0,0], 11:[1,3,3,3,2,2,4,4,0,0,0,0,0,0,0,0], 10:[1,0,0,0,3,3,2,2,1,1,1,0,0,0,0,0], 9:[3,1,1,1,0,0,3,3,2,2,2,0,0,0,0,0], 8:[0,2,2,2,1,1,0,0,3,3,3,0,0,0,0,0], 7:[0,3,3,3,2,2,1,1,4,4,0,0,0,0,0,0], 6:[1,0,0,0,3,3,2,2,2,2,1,0,0,0,0,0], 5:[2,1,1,1,0,0,3,3,3,3,2,0,0,0,0,0], 4:[3,2,2,2,1,1,0,0,0,0,3,0,0,0,0,0], 3:[1,3,3,3,2,2,1,1,1,1,4,0,0,0,0,0], 2:[2,4,4,4,3,3,0,0,2,2,2,0,0,0,0,0], 1:[1,0,0,0,4,4,1,1,3,3,3,0,0,0,0,0] },
-            don: { 21:[2,1,1,1,0,0,2,2,4,4,4,4,2,2,2,4], 20:[3,2,2,2,1,1,3,3,0,0,0,4,0,4,0,0], 19:[0,0,0,0,2,2,4,4,1,1,1,4,1,4,1,1], 18:[1,1,1,1,0,0,1,1,2,2,2,2,2,2,2,2], 17:[2,2,2,2,1,1,0,0,0,0,0,3,3,3,3,0], 16:[1,3,3,3,2,2,1,1,1,1,1,4,0,0,0,0], 15:[1,4,4,4,3,3,1,1,0,0,0,0,0,0,0,0], 14:[1,0,0,0,4,4,1,1,1,1,1,1,1,1,1,1], 13:[3,1,1,1,0,0,3,3,2,2,2,2,2,2,2,2], 12:[3,2,2,2,1,1,3,3,3,3,3,0,3,3,3,2], 11:[0,3,3,3,2,2,4,4,0,0,0,0,4,4,4,4], 10:[2,0,0,0,3,3,2,2,1,1,1,0,4,4,4,4], 9:[2,1,1,1,0,0,2,2,2,2,2,1,0,0,2,1], 8:[0,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0], 7:[0,3,3,3,2,2,0,0,0,0,0,0,1,1,0,0], 6:[1,0,0,0,3,3,1,1,1,1,1,2,0,0,1,2], 5:[1,1,1,1,0,0,1,1,3,3,3,3,1,1,2,3], 4:[3,2,2,2,1,1,0,0,3,3,3,0,2,2,3,2], 3:[3,3,3,3,3,2,2,1,1,4,4,4,0,3,3,4,4], 2:[4,4,4,4,3,3,0,0,4,4,4,1,4,4,4,4], 1:[1,0,0,0,4,4,1,1,3,3,3,3,1,1,1,3] },
-            seven: { 21:[4,1,1,1,0,0,4,4,4,4,4,2,2,2,2,2], 20:[0,2,2,2,1,1,4,4,0,0,0,3,0,3,3,3], 19:[1,0,0,0,2,2,4,4,1,1,1,4,1,4,0,0], 18:[2,1,1,1,0,0,2,2,2,2,2,1,2,1,1,1], 17:[3,2,2,2,1,1,0,0,0,0,0,2,3,2,2,0], 16:[0,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0], 15:[0,4,4,4,3,3,0,0,0,0,0,1,0,1,1,1], 14:[1,0,0,0,4,4,1,1,1,1,1,2,1,2,2,2], 13:[2,1,1,1,0,0,2,2,2,2,2,3,2,3,3,3], 12:[2,2,2,2,1,1,4,4,3,3,3,4,3,4,4,4], 11:[4,3,3,3,2,2,4,4,4,4,4,4,4,4,4,4], 10:[4,0,0,0,3,3,4,4,4,4,4,4,4,4,4,4], 9:[1,1,1,1,0,0,1,1,2,2,2,0,0,0,0,0], 8:[3,2,2,2,1,1,3,3,3,3,3,0,0,0,0,0], 7:[4,3,3,3,2,2,4,4,4,4,4,1,1,1,1,1], 6:[2,0,0,0,3,3,2,2,1,1,1,2,0,2,2,2], 5:[3,1,1,1,0,0,3,3,3,3,3,3,1,3,3,3], 4:[2,2,2,2,1,1,0,0,3,3,3,0,2,0,0,0], 3:[0,3,3,3,2,2,0,0,1,1,1,1,3,1,1,1], 2:[1,4,4,4,3,3,1,1,2,2,2,0,4,0,0,0], 1:[3,0,0,0,4,4,3,3,3,3,3,1,1,1,1,1] },
-            reg: { 21:[2,1,1,1,0,0,2,2,4,4,4,2,2,2,2,2], 20:[0,2,2,2,1,1,4,4,0,0,0,3,3,3,3,3], 19:[1,0,0,0,2,2,4,4,1,1,1,4,4,4,4,4], 18:[2,1,1,1,0,0,2,2,2,2,2,2,2,2,2,2], 17:[3,2,2,2,1,1,0,0,0,0,0,3,3,3,3,0], 16:[0,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0], 15:[0,4,4,4,3,3,0,0,0,0,0,0,0,0,0,0], 14:[2,0,0,0,4,4,2,2,1,1,1,1,1,1,1,1], 13:[2,1,1,1,0,0,2,2,2,2,2,2,2,2,2,2], 12:[3,2,2,2,1,1,3,3,3,3,3,3,3,3,3,3], 11:[0,3,3,3,2,2,4,4,0,0,0,4,4,4,4,4], 10:[1,0,0,0,3,3,1,1,1,1,1,1,4,4,4,4], 9:[2,1,1,1,0,0,2,2,2,2,2,2,0,0,2,2], 8:[3,2,2,2,1,1,3,3,3,3,3,3,0,0,3,3], 7:[4,3,3,3,2,2,4,4,4,4,4,4,1,1,4,4], 6:[2,0,0,0,3,3,2,2,1,1,1,0,0,0,0,0], 5:[3,1,1,1,0,0,3,3,3,3,3,1,1,1,1,1], 4:[0,2,2,2,1,1,0,0,3,3,3,0,2,2,2,2], 3:[3,3,3,3,3,2,2,1,1,4,4,4,1,3,3,3,3], 2:[0,4,4,4,3,3,0,0,2,2,2,0,4,4,0,0], 1:[1,0,0,0,4,4,1,1,3,3,3,3,3,3,3,3] }
-        },
-        right: {
-            hazure: { 21:[1,0,1,0,3,3,1,1,1,1,3,0,0,0,0,0], 20:[1,1,2,1,0,0,2,2,2,2,0,0,0,0,0,0], 19:[3,2,3,2,1,1,1,1,3,3,1,0,0,0,0,0], 18:[3,3,0,3,2,2,0,0,0,0,2,0,0,0,0,0], 17:[0,0,1,0,3,3,3,3,1,1,3,0,0,0,0,0], 16:[1,1,2,1,0,0,2,2,2,2,0,0,0,0,0,0], 15:[2,2,3,2,1,1,1,1,3,3,1,0,0,0,0,0], 14:[3,3,0,3,2,2,0,0,0,0,2,0,0,0,0,0], 13:[1,0,1,0,3,3,3,3,1,1,3,0,0,0,0,0], 12:[2,1,2,1,4,4,2,2,2,2,4,0,0,0,0,0], 11:[1,2,3,2,0,0,0,0,3,3,0,0,0,0,0,0], 10:[4,3,4,3,1,1,4,4,4,4,1,0,0,0,0,0], 9:[3,4,0,4,2,2,2,2,0,0,2,0,0,0,0,0], 8:[0,0,1,0,3,3,1,1,1,1,3,0,0,0,0,0], 7:[2,1,2,1,0,0,0,0,2,2,0,0,0,0,0,0], 6:[2,2,3,2,1,1,3,3,3,3,1,0,0,0,0,0], 5:[4,3,0,3,2,2,2,2,0,0,2,0,0,0,0,0], 4:[0,0,1,0,3,3,1,1,1,1,3,0,0,0,0,0], 3:[1,1,2,1,0,0,0,0,2,2,0,0,0,0,0,0], 2:[2,2,3,2,1,1,3,3,3,3,1,0,0,0,0,0], 1:[0,3,0,3,2,2,2,2,0,0,2,0,0,0,0,0] },
-            don: { 21:[3,0,1,0,3,3,3,3,3,3,3,3,3,3,3,3], 20:[4,1,2,1,0,0,4,4,4,4,4,4,4,4,4,4], 19:[3,2,3,2,1,1,3,3,1,1,1,1,3,3,1,1], 18:[2,3,0,3,2,2,2,2,0,0,0,0,0,0,0,0], 17:[1,0,1,0,3,3,1,1,1,1,1,3,1,1,1,1], 16:[0,1,2,1,0,0,0,0,2,2,2,2,2,2,0,2], 15:[3,2,3,2,1,1,3,3,3,3,3,1,3,3,1,1], 14:[2,3,0,3,2,2,2,2,0,0,0,4,2,2,2,4], 13:[1,0,1,0,3,3,1,1,3,3,3,0,0,0,3,3], 12:[4,1,2,1,4,4,4,4,2,2,2,1,1,1,4,1], 11:[3,2,3,2,0,0,3,3,0,0,0,0,0,0,4,0], 10:[1,3,4,3,1,1,1,1,4,4,4,3,1,1,4,3], 9:[0,4,0,4,2,2,0,0,2,2,2,2,2,2,1,2], 8:[3,0,1,0,3,3,3,3,1,1,1,3,3,3,1,3], 7:[2,1,2,1,0,0,2,2,0,0,0,4,4,4,0,4], 6:[1,2,3,2,1,1,1,1,1,1,1,1,3,3,1,1], 5:[0,3,0,3,2,2,0,0,0,0,0,0,0,0,0,0], 4:[1,0,1,0,3,3,1,1,1,1,1,1,1,1,1,1], 3:[2,1,2,1,0,0,2,2,2,2,2,2,2,2,0,2], 2:[1,2,3,2,1,1,1,1,3,3,3,1,3,3,1,1], 1:[2,3,0,3,2,2,2,2,2,2,2,2,2,2,2,2] },
-            seven: { 21:[1,0,1,0,3,3,1,1,1,1,1,3,1,3,3,3], 20:[0,1,2,1,0,0,0,0,0,0,0,0,2,0,0,0], 19:[1,2,3,2,1,1,1,1,3,3,3,0,3,0,0,0], 18:[0,3,0,3,2,2,0,0,0,0,0,2,0,0,0,0], 17:[3,0,1,0,3,3,3,3,3,3,3,3,1,1,1,1], 16:[2,1,2,1,0,0,2,2,2,2,2,0,2,0,0,0], 15:[1,2,3,2,1,1,1,1,1,1,1,1,3,1,1,1], 14:[4,3,0,3,2,2,4,4,4,4,4,2,2,2,2,2], 13:[0,0,1,0,3,3,3,3,0,0,0,0,0,0,3,0], 12:[1,1,2,1,4,4,4,4,1,1,1,0,1,0,4,0], 11:[0,2,3,2,0,0,0,0,0,0,0,0,0,0,0,0], 10:[3,3,4,3,1,1,1,1,1,1,1,2,1,2,2,2], 9:[2,4,0,4,2,2,2,2,2,2,2,2,2,2,2,2], 8:[3,0,1,0,3,3,3,3,3,3,3,3,3,3,3,3], 7:[4,1,2,1,0,0,4,4,4,4,4,4,4,4,4,4], 6:[1,2,3,2,1,1,1,1,3,3,3,1,3,1,1,1], 5:[2,3,0,3,2,2,2,2,2,2,2,2,0,2,2,2], 4:[3,0,1,0,3,3,3,3,1,1,1,2,1,2,2,2], 3:[2,1,2,1,0,0,2,2,2,2,2,0,2,0,0,0], 2:[1,2,3,2,1,1,1,1,3,3,3,0,3,0,0,0], 1:[2,3,0,3,2,2,2,2,0,0,0,1,0,1,1,1] },
-            reg: { 21:[1,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1], 20:[0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0], 19:[1,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1], 18:[0,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0], 17:[3,0,0,0,3,3,3,3,1,1,1,1,1,1,1,1], 16:[2,1,1,1,0,0,2,2,2,2,2,2,2,2,2,2], 15:[3,2,2,2,1,1,3,3,3,3,3,3,3,3,3,3], 14:[4,3,3,3,2,2,4,4,4,4,4,4,4,4,4,4], 13:[1,0,0,0,3,3,1,1,3,3,3,0,3,3,3,3], 12:[2,1,1,1,4,4,2,2,2,2,2,0,4,4,4,4], 11:[0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0], 10:[4,3,3,3,1,1,4,4,4,4,4,1,1,1,1,1], 9:[0,4,4,4,2,2,0,0,2,2,2,2,2,2,0,2], 8:[1,0,0,0,3,3,1,1,1,1,1,3,3,3,1,3], 7:[0,1,1,1,0,0,0,0,0,0,0,4,4,4,0,4], 6:[1,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1], 5:[0,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0], 4:[3,0,0,0,3,3,3,3,3,3,3,1,1,1,1,1], 3:[2,1,1,1,0,0,2,2,2,2,2,2,2,2,2,2], 2:[3,2,2,2,1,1,3,3,3,3,3,3,3,3,3,3], 1:[4,3,3,3,2,2,4,4,4,4,4,4,4,4,4,4] }
-        }
+        middle: { hazure: { 21:[4,1,1,1,0,0,2,2,4,4,4,0,0,0,0,0], 20:[0,2,2,2,1,1,3,3,0,0,0,0,0,0,0,0], 19:[1,0,0,0,2,2,4,4,1,1,1,0,0,0,0,0], 18:[2,1,1,1,0,0,2,2,2,2,2,0,0,0,0,0], 17:[0,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0], 16:[1,3,3,3,2,2,0,0,1,1,1,0,0,0,0,0], 15:[0,4,4,4,3,3,0,0,0,0,0,0,0,0,0,0], 14:[1,0,0,0,4,4,2,2,1,1,1,0,0,0,0,0], 13:[2,1,1,1,0,0,2,2,2,2,2,0,0,0,0,0], 12:[3,2,2,2,1,1,4,4,3,3,3,0,0,0,0,0], 11:[1,3,3,3,2,2,4,4,0,0,0,0,0,0,0,0], 10:[1,0,0,0,3,3,2,2,1,1,1,0,0,0,0,0], 9:[3,1,1,1,0,0,3,3,2,2,2,0,0,0,0,0], 8:[0,2,2,2,1,1,0,0,3,3,3,0,0,0,0,0], 7:[0,3,3,3,2,2,1,1,4,4,0,0,0,0,0,0], 6:[1,0,0,0,3,3,2,2,2,2,1,0,0,0,0,0], 5:[2,1,1,1,0,0,3,3,3,3,2,0,0,0,0,0], 4:[3,2,2,2,1,1,0,0,0,0,3,0,0,0,0,0], 3:[1,3,3,3,2,2,1,1,1,1,4,0,0,0,0,0], 2:[2,4,4,4,3,3,0,0,2,2,2,0,0,0,0,0], 1:[1,0,0,0,4,4,1,1,3,3,3,0,0,0,0,0] }, don: { 21:[2,1,1,1,0,0,2,2,4,4,4,4,2,2,2,4], 20:[3,2,2,2,1,1,3,3,0,0,0,4,0,4,0,0], 19:[0,0,0,0,2,2,4,4,1,1,1,4,1,4,1,1], 18:[1,1,1,1,0,0,1,1,2,2,2,2,2,2,2,2], 17:[2,2,2,2,1,1,0,0,0,0,0,3,3,3,3,0], 16:[1,3,3,3,2,2,1,1,1,1,1,4,0,0,0,0], 15:[1,4,4,4,3,3,1,1,0,0,0,0,0,0,0,0], 14:[1,0,0,0,4,4,1,1,1,1,1,1,1,1,1,1], 13:[3,1,1,1,0,0,3,3,2,2,2,2,2,2,2,2], 12:[3,2,2,2,1,1,3,3,3,3,3,0,3,3,3,2], 11:[0,3,3,3,2,2,4,4,0,0,0,0,4,4,4,4], 10:[2,0,0,0,3,3,2,2,1,1,1,0,4,4,4,4], 9:[2,1,1,1,0,0,2,2,2,2,2,1,0,0,2,1], 8:[0,2,2,2,1,1,0,0,0,0,0,0,0,0,0,0], 7:[0,3,3,3,2,2,0,0,0,0,0,0,1,1,0,0], 6:[1,0,0,0,3,3,1,1,1,1,1,2,0,0,1,2], 5:[1,1,1,1,0,0,1,1,3,3,3,3,1,1,2,3], 4:[3,2,2,2,1,1,0,0,3,3,3,0,2,2,3,2], 3:[3,3,3,3,3,2,2,1,1,4,4,4,0,3,3,4,4], 2:[4,4,4,4,3,3,0,0,4,4,4,1,4,4,4,4], 1:[1,0,0,0,4,4,1,1,3,3,3,3,1,1,1,3] }, seven: { 21:[4,1,1,1,0,0,4,4,4,4,4,2,2,2,2,2], 20:[0,2,2,2,1,1,4,4,0,0,0,3,0,3,3,3], 19:[1,0,0,0,2,2,4,4,1,1,1,4,1,4,0,0], 18:[2,1,1,1,0,0,2,2,2,2,2,1,2,1,1,1], 17:[3,2,2,2,1,1,0,0,0,0,0,2,3,2,2,0], 16:[0,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0], 15:[0,4,4,4,3,3,0,0,0,0,0,1,0,1,1,1], 14:[1,0,0,0,4,4,1,1,1,1,1,2,1,2,2,2], 13:[2,1,1,1,0,0,2,2,2,2,2,3,2,3,3,3], 12:[2,2,2,2,1,1,4,4,3,3,3,4,3,4,4,4], 11:[4,3,3,3,2,2,4,4,4,4,4,4,4,4,4,4], 10:[4,0,0,0,3,3,4,4,4,4,4,4,4,4,4,4], 9:[1,1,1,1,0,0,1,1,2,2,2,0,0,0,0,0], 8:[3,2,2,2,1,1,3,3,3,3,3,0,0,0,0,0], 7:[4,3,3,3,2,2,4,4,4,4,4,1,1,1,1,1], 6:[2,0,0,0,3,3,2,2,1,1,1,2,0,2,2,2], 5:[3,1,1,1,0,0,3,3,3,3,3,3,1,3,3,3], 4:[2,2,2,2,1,1,0,0,3,3,3,0,2,0,0,0], 3:[0,3,3,3,2,2,0,0,1,1,1,1,3,1,1,1], 2:[1,4,4,4,3,3,1,1,2,2,2,0,4,0,0,0], 1:[3,0,0,0,4,4,3,3,3,3,3,1,1,1,1,1] }, reg: { 21:[2,1,1,1,0,0,2,2,4,4,4,2,2,2,2,2], 20:[0,2,2,2,1,1,4,4,0,0,0,3,3,3,3,3], 19:[1,0,0,0,2,2,4,4,1,1,1,4,4,4,4,4], 18:[2,1,1,1,0,0,2,2,2,2,2,2,2,2,2,2], 17:[3,2,2,2,1,1,0,0,0,0,0,3,3,3,3,0], 16:[0,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0], 15:[0,4,4,4,3,3,0,0,0,0,0,0,0,0,0,0], 14:[2,0,0,0,4,4,2,2,1,1,1,1,1,1,1,1], 13:[2,1,1,1,0,0,2,2,2,2,2,2,2,2,2,2], 12:[3,2,2,2,1,1,3,3,3,3,3,3,3,3,3,3], 11:[0,3,3,3,2,2,4,4,0,0,0,4,4,4,4,4], 10:[1,0,0,0,3,3,1,1,1,1,1,1,4,4,4,4], 9:[2,1,1,1,0,0,2,2,2,2,2,2,0,0,2,2], 8:[3,2,2,2,1,1,3,3,3,3,3,3,0,0,3,3], 7:[4,3,3,3,2,2,4,4,4,4,4,4,1,1,4,4], 6:[2,0,0,0,3,3,2,2,1,1,1,0,0,0,0,0], 5:[3,1,1,1,0,0,3,3,3,3,3,1,1,1,1,1], 4:[0,2,2,2,1,1,0,0,3,3,3,0,2,2,2,2], 3:[3,3,3,3,3,2,2,1,1,4,4,4,1,3,3,3,3], 2:[0,4,4,4,3,3,0,0,2,2,2,0,4,4,0,0], 1:[1,0,0,0,4,4,1,1,3,3,3,3,3,3,3,3] } },
+        right: { hazure: { 21:[1,0,1,0,3,3,1,1,1,1,3,0,0,0,0,0], 20:[1,1,2,1,0,0,2,2,2,2,0,0,0,0,0,0], 19:[3,2,3,2,1,1,1,1,3,3,1,0,0,0,0,0], 18:[3,3,0,3,2,2,0,0,0,0,2,0,0,0,0,0], 17:[0,0,1,0,3,3,3,3,1,1,3,0,0,0,0,0], 16:[1,1,2,1,0,0,2,2,2,2,0,0,0,0,0,0], 15:[2,2,3,2,1,1,1,1,3,3,1,0,0,0,0,0], 14:[3,3,0,3,2,2,0,0,0,0,2,0,0,0,0,0], 13:[1,0,1,0,3,3,3,3,1,1,3,0,0,0,0,0], 12:[2,1,2,1,4,4,2,2,2,2,4,0,0,0,0,0], 11:[1,2,3,2,0,0,0,0,3,3,0,0,0,0,0,0], 10:[4,3,4,3,1,1,4,4,4,4,1,0,0,0,0,0], 9:[3,4,0,4,2,2,2,2,0,0,2,0,0,0,0,0], 8:[0,0,1,0,3,3,1,1,1,1,3,0,0,0,0,0], 7:[2,1,2,1,0,0,0,0,2,2,0,0,0,0,0,0], 6:[2,2,3,2,1,1,3,3,3,3,1,0,0,0,0,0], 5:[4,3,0,3,2,2,2,2,0,0,2,0,0,0,0,0], 4:[0,0,1,0,3,3,1,1,1,1,3,0,0,0,0,0], 3:[1,1,2,1,0,0,0,0,2,2,0,0,0,0,0,0], 2:[2,2,3,2,1,1,3,3,3,3,1,0,0,0,0,0], 1:[0,3,0,3,2,2,2,2,0,0,2,0,0,0,0,0] }, don: { 21:[3,0,1,0,3,3,3,3,3,3,3,3,3,3,3,3], 20:[4,1,2,1,0,0,4,4,4,4,4,4,4,4,4,4], 19:[3,2,3,2,1,1,3,3,1,1,1,1,3,3,1,1], 18:[2,3,0,3,2,2,2,2,0,0,0,0,0,0,0,0], 17:[1,0,1,0,3,3,1,1,1,1,1,3,1,1,1,1], 16:[0,1,2,1,0,0,0,0,2,2,2,2,2,2,0,2], 15:[3,2,3,2,1,1,3,3,3,3,3,1,3,3,1,1], 14:[2,3,0,3,2,2,2,2,0,0,0,4,2,2,2,4], 13:[1,0,1,0,3,3,1,1,3,3,3,0,0,0,3,3], 12:[4,1,2,1,4,4,4,4,2,2,2,1,1,1,4,1], 11:[3,2,3,2,0,0,3,3,0,0,0,0,0,0,4,0], 10:[1,3,4,3,1,1,1,1,4,4,4,3,1,1,4,3], 9:[0,4,0,4,2,2,0,0,2,2,2,2,2,2,1,2], 8:[3,0,1,0,3,3,3,3,1,1,1,3,3,3,1,3], 7:[2,1,2,1,0,0,2,2,0,0,0,4,4,4,0,4], 6:[1,2,3,2,1,1,1,1,1,1,1,1,3,3,1,1], 5:[0,3,0,3,2,2,0,0,0,0,0,0,0,0,0,0], 4:[1,0,1,0,3,3,1,1,1,1,1,1,1,1,1,1], 3:[2,1,2,1,0,0,2,2,2,2,2,2,2,2,0,2], 2:[1,2,3,2,1,1,1,1,3,3,3,1,3,3,1,1], 1:[2,3,0,3,2,2,2,2,2,2,2,2,2,2,2,2] }, seven: { 21:[1,0,1,0,3,3,1,1,1,1,1,3,1,3,3,3], 20:[0,1,2,1,0,0,0,0,0,0,0,0,2,0,0,0], 19:[1,2,3,2,1,1,1,1,3,3,3,0,3,0,0,0], 18:[0,3,0,3,2,2,0,0,0,0,0,2,0,0,0,0], 17:[3,0,1,0,3,3,3,3,3,3,3,3,1,1,1,1], 16:[2,1,2,1,0,0,2,2,2,2,2,0,2,0,0,0], 15:[1,2,3,2,1,1,1,1,1,1,1,1,3,1,1,1], 14:[4,3,0,3,2,2,4,4,4,4,4,2,2,2,2,2], 13:[0,0,1,0,3,3,3,3,0,0,0,0,0,0,3,0], 12:[1,1,2,1,4,4,4,4,1,1,1,0,1,0,4,0], 11:[0,2,3,2,0,0,0,0,0,0,0,0,0,0,0,0], 10:[3,3,4,3,1,1,1,1,1,1,1,2,1,2,2,2], 9:[2,4,0,4,2,2,2,2,2,2,2,2,2,2,2,2], 8:[3,0,1,0,3,3,3,3,3,3,3,3,3,3,3,3], 7:[4,1,2,1,0,0,4,4,4,4,4,4,4,4,4,4], 6:[1,2,3,2,1,1,1,1,3,3,3,1,3,1,1,1], 5:[2,3,0,3,2,2,2,2,2,2,2,2,0,2,2,2], 4:[3,0,1,0,3,3,3,3,1,1,1,2,1,2,2,2], 3:[2,1,2,1,0,0,2,2,2,2,2,0,2,0,0,0], 2:[1,2,3,2,1,1,1,1,3,3,3,0,3,0,0,0], 1:[2,3,0,3,2,2,2,2,0,0,0,1,0,1,1,1] }, reg: { 21:[1,0,0,0,3,3,1,1,1,1,1,1,1,1,1,1], 20:[0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0], 19:[1,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1], 18:[0,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0], 17:[3,0,0,0,3,3,3,3,1,1,1,1,1,1,1,1], 16:[2,1,1,1,0,0,2,2,2,2,2,2,2,2,2,2], 15:[3,2,2,2,1,1,3,3,3,3,3,3,3,3,3,3], 14:[4,3,3,3,2,2,4,4,4,4,4,4,4,4,4,4], 13:[1,0,0,0,3,3,1,1,3,3,3,0,3,3,3,3], 12:[2,1,1,1,4,4,2,2,2,2,2,0,4,4,4,4], 11:[0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0], 10:[4,3,3,3,1,1,4,4,4,4,4,1,1,1,1,1], 9:[0,4,4,4,2,2,0,0,2,2,2,2,2,2,0,2], 8:[1,0,0,0,3,3,1,1,1,1,1,3,3,3,1,3], 7:[0,1,1,1,0,0,0,0,0,0,0,4,4,4,0,4], 6:[1,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1], 5:[0,3,3,3,2,2,0,0,0,0,0,0,0,0,0,0], 4:[3,0,0,0,3,3,3,3,3,3,3,1,1,1,1,1], 3:[2,1,1,1,0,0,2,2,2,2,2,2,2,2,2,2], 2:[3,2,2,2,1,1,3,3,3,3,3,3,3,3,3,3], 1:[4,3,3,3,2,2,4,4,4,4,4,4,4,4,4,4] } }
     };
 
     function buildL() {
@@ -137,7 +141,7 @@
     function drawR(midNum) {
         const stripR = document.getElementById('stripR');
         stripR.innerHTML = '';
-        [3, 2, 1, 0, -1, -2, -3].forEach(offset => {
+        [2, 1, 0, -1, -2].forEach(offset => {
             let num = midNum + offset;
             while(num > 21) num -= 21;
             while(num < 1) num += 21;
@@ -151,7 +155,7 @@
 
     const winL = document.getElementById('winL');
     winL.onscroll = () => {
-        const centerPos = winL.scrollTop + (sH * 3.5);
+        const centerPos = winL.scrollTop + (sH * 2.5);
         const rawIdx = Math.floor(centerPos / sH) % 21;
         selectedIdx = reelArray[rawIdx];
         if(winL.scrollTop < sH * 5) winL.scrollTop += sH * 21;
@@ -173,10 +177,9 @@
         document.getElementById('rb-' + id).classList.add('active');
         currentReel = id;
         buildL();
-        // 中段基準の初期スクロール位置を設定
         const initialMap = { left: 13, middle: 15, right: 3 };
         const initNum = initialMap[id];
-        const initScroll = sH * (21 + (21 - initNum + 21) - 3);
+        const initScroll = sH * (21 + (21 - initNum + 21) - 2);
         winL.scrollTop = initScroll;
         drawR(initNum);
         document.getElementById('val-mid').innerText = initNum;
@@ -185,7 +188,7 @@
     }
 
     function setState(id) {
-        document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.state-btn, .unit-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('st-' + id).classList.add('active');
         currentState = id;
         const tokBtns = document.querySelectorAll('.is-tok');
@@ -198,7 +201,7 @@
     }
 
     function setFlag(idx, btn) {
-        document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.flag-mini-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedFlagIdx = idx;
     }
